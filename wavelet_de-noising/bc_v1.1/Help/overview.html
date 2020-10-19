@@ -1,0 +1,145 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+  <head>
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+    <title>overview</title>
+  </head>
+  <body>
+    <big><u>OVERVIEW</u><br>
+      <br>
+      Here is a view of the GUI after a seismogram has been read and the
+      CWT computed:</big><br>
+    <br>
+    <hr size="2" width="100%"><img
+      src="figures/overview_screen_shot.png" alt="overview image of GUI"
+      width="901" height="529"><br>
+    <hr size="2" width="100%"><font size="+1">Functionality</font><br>
+    <ul>
+      <li><font size="+1">The purpose of the GUI is to allow
+          experimentation with various block thresholding schemes on
+          single trace seismic data to gain intuition on designing
+          appropriate noise reduction workflows.</font></li>
+      <li><font size="+1">A seismic data trace in SAC (Seismic Analysis
+          Code) format is read into the GUI, a continuous wavelet
+          transform (CWT) computed, and then processed using a variety
+          of block thresholding tools.</font></li>
+      <li><font size="+1">Operations are performed by choosing various
+          menu functions and using the color buttons on the GUI.</font></li>
+      <li><font size="+1">Once a flow has been determined, the MatLab
+          function "BCseis_process" can be used to process a suite of
+          seismograms.<br>
+        </font></li>
+    </ul>
+    <hr size="2" width="100%">
+    <p><font size="+1">Menu Functions<br>
+      </font></p>
+    <ul>
+      <li><font size="+1"><a href="file_menu.html">File</a>: Read and
+          write SAC files</font></li>
+      <li><font size="+1"><a href="plot_menu.html">Plot</a>: Plot the
+          current CWT and Seismogram on a separate plot</font></li>
+      <li><font size="+1"><a href="parameters_menu.html">Parameters</a>:
+          Choose the wavelet type and resolution.&nbsp; Parameters will
+          be displayed in the box to the upper right on the GUI.</font></li>
+      <li><font size="+1"><a href="calc_menu.html">Calc</a>: Refresh to
+          original data and CWT, Undo last action, Compute CWT, Estimate
+          Noise, Hard Threshold Noise, Soft Threshold Noise, Hard
+          Threshold Signal, Soft Threshold Signal, SNR Detector.</font></li>
+      <li><font size="+1"><a href="help_menu.html">Help</a>: Access the
+          help webpages</font></li>
+    </ul>
+    <hr size="2" width="100%">
+    <p><font size="+1"><a href="bandpass_blocking.html">Interactive
+          Bandpass Blocking</a><br>
+      </font></p>
+    <ul>
+      <li><font size="+1">Choose a band in scale and remove or reduce
+          its amplitude.</font></li>
+      <li><font size="+1">The simple calculator at the bottom can be
+          used with the MatLab data tip to determine a bandpass directly
+          from the CWT scalogram.</font></li>
+    </ul>
+    <hr size="2" width="100%">
+    <p><font size="+1"><a href="interactive_block_choice.html">Interactive
+
+          Block Choice</a> with Mouse<br>
+      </font></p>
+    <ul>
+      <li><font size="+1">Pick a region on the CWT plane to either keep
+          and exclude all other CWT coefficients ("Include Block") or
+          remove ("Exclude Block")</font><br>
+      </li>
+    </ul>
+    <hr size="2" width="100%">
+    <p><font size="+1">Choose Noise Time Bounds<br>
+      </font></p>
+    <ul>
+      <li><font size="+1">Enter the begin and end times of the region of
+          the seismogram that will be used to estimate the noise.<br>
+        </font></li>
+    </ul>
+    <hr size="2" width="100%">
+    <p><font size="+1">Parameters for Noise Reduction Functions</font></p>
+    <ul>
+      <li><font size="+1">"Sigma Factor" is used in hard and soft
+          thresholding of the signal using the chosen noise region. If
+          "Donoho's Threshold Criterion" radiobutton is pushed, then
+          sigma factor is calculated from the noise estimate.</font></li>
+      <li><font size="+1">"N lower bound" is used in the SNR Detector
+          function</font></li>
+    </ul>
+    <hr size="2" width="100%">
+    <p><font size="+1">Simple Calculator<br>
+      </font></p>
+    <ul>
+      <li><font size="+1">Enter numbers in either box and the calculator
+          will convert to log10 from linear or linear to log10 after
+          hitting the return button on the keyboard.<br>
+        </font></li>
+    </ul>
+    <hr size="2" width="100%">
+    <p><font size="+1">Choose the Display Time Window<br>
+      </font></p>
+    <ul>
+      <li><font size="+1">begin and end time for the seismogram and CWT
+          plots.&nbsp; Press the "TLIM" button to replot.<br>
+        </font></li>
+    </ul>
+    <hr size="2" width="100%">
+    <p><font size="+1">Change the color saturation of the CWT plot<br>
+      </font></p>
+    <ul>
+      <li><font size="+1">Use the slider to increase the color
+          saturation of the CWT plot.&nbsp; This usually allows better
+          viewing of the CWT plot in interpreting what is signal and
+          noise.<br>
+        </font></li>
+    </ul>
+    <hr size="2" width="100%">
+    <p><font size="+1">Standard MatLab tools for examining each plot<br>
+      </font></p>
+    <ul>
+      <li><font size="+1">Magnify and demagnify tools allow details of
+          either plot to be informally examined.&nbsp; You may have to
+          press the "TLIM" button to refresh to the correct time window
+          display.<br>
+          The datatip can be used to estimate times, amplitudes, and
+          scales.<br>
+        </font></li>
+    </ul>
+    <hr size="2" width="100%">
+    <p><font size="+1">The Canonical Seismogram<br>
+      </font></p>
+    <ul>
+      <li><font size="+1">Images on these help pages were taken from
+          screen shots of processing an explosion recorded by the IRIS
+          Wavefields Community Experiment that was deployed in
+          June-November 2016 (Network YW in IRIS parlance).&nbsp; The
+          data waveform can be found in /data.</font></li>
+    </ul>
+    <hr size="2" width="100%">
+    <p><font size="+1"><a href="help.html">To Main Menu</a></font><br>
+    </p>
+    <font size="+1"> </font><br>
+  </body>
+</html>

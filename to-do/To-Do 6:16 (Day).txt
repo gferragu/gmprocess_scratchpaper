@@ -1,0 +1,20 @@
+X Get scripts from Eric/Brad
+
+Look into "mixed effects"
+
+Read GMPE papers, and papers from Eric
+
+Check out Chuck Langston's MATLAB codes for wavelet denoting
+
+X Add autoPEP8 to Spyder
+
+Review Azure, Travis, Codacy, and CodeCov
+
+Do a GitHub crash course
+
+Clean up desktop and 
+
+X organize a development environment
+
+
+

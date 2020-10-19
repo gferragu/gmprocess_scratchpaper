@@ -1,0 +1,19 @@
+Look into "mixed effects"
+
+X Read GMPE papers, and papers from Eric
+
+Wavelet Denoising
+	Check out Chuck Langston's MATLAB codes for wavelet denoting
+	
+	X Read through Brad's codes
+
+	X - Read MATLAB wavelet denoising documentation
+
+Review Azure, Travis, Codacy, and CodeCov
+
+Do a GitHub crash course
+
+X Clean up desktop
+
+Finished reading all code and taking notes
+

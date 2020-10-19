@@ -1,0 +1,59 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+  <head>
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+    <title>bandpass_blocking</title>
+  </head>
+  <body>
+    <u><font size="+1">BANDPASS BLOCKING</font></u><br>
+    <br>
+    <img
+      src="figures/Screen%20Shot%202018-05-09%20at%208.30.09%20AM.png"
+      alt="Bandpass Blocking" height="212" width="324"><br>
+    <br>
+    <font size="+1">Bandpass blocking is basically the construction of a
+      band reject filter where wavelet coefficients are modified over a
+      scale bandpass.&nbsp; For example, in the above figure showing the
+      Bandpass Blocking box of the GUI, a scale band is chosen between 1
+      and 1000 seconds.&nbsp; In addition, a threshold of 0% is
+      chosen.&nbsp; The CWT coefficients in this band will be multiplied
+      by 0.&nbsp; If 5% had been chosen, then the coefficients would be
+      multiplied by 0.05.&nbsp; After multiplication, the inverse CWT is
+      computed to display the filtered seismogram.<br>
+      <br>
+      Here is an example using the canonical seismogram:</font><br>
+    <br>
+    <br>
+    <img
+      src="figures/Screen%20Shot%202019-03-24%20at%2011.45.16%20AM.png"
+      alt="bandpass blocking example" height="529" width="883"><br>
+    <hr size="2" width="100%"><br>
+    Note that the scale unit is seconds.&nbsp; The CWT Scalogram is
+    plotted in log10(scale) vs time.&nbsp; In experimenting with
+    Bandpass Blocking it is helpful to use the MatLab datatip<br>
+    &nbsp;<img
+      src="figures/Screen%20Shot%202018-05-09%20at%208.40.32%20AM.png"
+      alt="matlab datatip" height="72" width="94"><br>
+    to choose scale points on the Scalogram.&nbsp; The numerical values
+    will be in log10.&nbsp; The Scale Numeric Calculator at the bottom
+    of the GUI<br>
+    <br>
+    <img
+      src="figures/Screen%20Shot%202018-05-09%20at%208.43.03%20AM.png"
+      alt="Scale numeric calculator" height="55" width="392"><br>
+    <br>
+    is provided to covert these log10 data values to actual values that
+    can be input in the Bandpass Blocking edit boxes.<br>
+    <br>
+    To use the calculator, input a value in a box and press the keyboard
+    &lt;return&gt; key.&nbsp; The conversion goes both ways.<br>
+    <hr size="2" width="100%"><font size="+1"><a
+        href="file:///Users/cal/matlab/denoising/bc_v1.0/Help/help.html">To
+
+
+
+        Main Menu</a><br>
+      <br>
+    </font> <br>
+  </body>
+</html>

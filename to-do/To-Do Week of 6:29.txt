@@ -1,0 +1,13 @@
+Note: First full work week and first full week back in Eugene
+
+
+
+Goals:
+
+X Finished reading all code and taking notes
+
+X Review and note take on Chuck Langston's MATLAB codes for wavelet denoising
+
+Do some tutorial-ish runs with gmprocess
+
+X Begin work on Github wavelet denoising issue and get a working-is version of something

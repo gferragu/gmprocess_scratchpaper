@@ -1,0 +1,172 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+  <head>
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+    <title>calc_menu</title>
+  </head>
+  <body>
+    <font size="+1"><u>CALC MENU</u></font><br>
+    <br>
+    <img
+      src="figures/Screen%20Shot%202018-05-10%20at%208.18.50%20PM.png"
+      alt="calc menu" height="299" width="445"><br>
+    <br>
+    <font size="+1">The CALC menu has many functions for processing the
+      data in various ways.<br>
+      <br>
+    </font>
+    <hr size="2" width="100%"><font size="+1"><i>Refresh</i><br>
+      <br>
+      Refresh takes the data back to its initial form when it was read
+      into the program. It re-plots the first CWT and the original
+      seismogram.<br>
+    </font>
+    <hr size="2" width="100%"><font size="+1"><i>Undo</i><br>
+      <br>
+      This function undoes the last operation of the GUI.<br>
+    </font>
+    <hr size="2" width="100%"><font size="+1"><i>Compute CWT</i><br>
+      <br>
+      The CWT is computed for the seismogram shown in the seismogram
+      plot.&nbsp; The CWT TFR is then plotted in the top window.&nbsp;
+      Further processing cannot happen until the CWT is computed.<br>
+    </font>
+    <hr size="2" width="100%"><font size="+1"><i>Estimate Noise</i><br>
+      <br>
+      The noise is estimated for a portion of the seismogram defined in
+      the "Choose Noise Time Bounds" box in the lower left.&nbsp; The
+      default values for begin and end times are 0 and 1,
+      respectively.&nbsp; Here is an example with the canonical
+      seismogram using a time bound of [0, 60] s.<br>
+      <br>
+      <img
+        src="figures/Screen%20Shot%202019-03-24%20at%2010.01.23%20AM.png"
+        alt="example with noise bounds" height="555" width="929"><br>
+      <br>
+      On choosing <i>Estimate Noise</i>, the GUI finds the mean and
+      standard deviation at each scale in the time interval
+      chosen.&nbsp; Note that "Donoho's Thereshold Criterion" was chosen
+      for this calculation.&nbsp; A separate plot is produced showing
+      the result of calculating the mean and the threshold function:<br>
+      <br>
+      <img
+        src="figures/Screen%20Shot%202019-03-24%20at%2010.01.46%20AM.png"
+        alt="Donohos threshold" height="420" width="479"><br>
+      <br>
+      In addition, the non-Gaussianity of the distribution of wavelet
+      coefficients is also plotted as a function of wavelet scale:<br>
+      <br>
+      <img
+        src="figures/Screen%20Shot%202019-03-24%20at%2010.02.01%20AM.png"
+        alt="kurtosis associated with Donoho's calculation" height="422"
+        width="482"><br>
+      <br>
+      The wavelet distribution is approximately Gaussian for scales that
+      fall in between the two horizontal lines bounding the value of
+      zero.<br>
+      <br>
+      The noise must be estimated before using the remainder of the
+      commands in the CALC menu.<br>
+      <br>
+      Note that the "Donoho's Threshold Criterion" radiobutton must be
+      pressed if you want to use this parameter in the noise or signal
+      thresholding schemes.<br>
+      <br>
+      <img
+        src="figures/Screen%20Shot%202019-03-24%20at%2010.50.54%20AM.png"
+        alt="Donoho's menu" height="173" width="339"><br>
+      <br>
+      If the 'ECDF Method" button is pressed, <br>
+      <br>
+      <img
+        src="figures/Screen%20Shot%202019-03-24%20at%2010.51.16%20AM.png"
+        alt="ECDF Button" height="171" width="337"><br>
+      <br>
+      then the threshold is computed using the empirical cumulative
+      probability distribution (ECDF) method.&nbsp; The result gives a
+      plot of the mean and the ECDF threshold:<br>
+      <br>
+      <img
+        src="figures/Screen%20Shot%202019-03-24%20at%2010.51.53%20AM.png"
+        alt="ECDF Threshold" height="438" width="499"><br>
+      <br>
+    </font>
+    <hr size="2" width="100%"><font size="+1"><i>Hard Threshold N</i><i>oise
+
+
+
+        or Soft Threshold Noise</i><br>
+      <br>
+      These functions remove noise and reveal the signal.<br>
+      <br>
+      Here is quick tutorial on CWT theory that explains hard and soft
+      thresholding:<br>
+      <br>
+      <img
+        src="figures/Screen%20Shot%202019-03-24%20at%2011.17.59%20AM.png"
+        alt="page1" height="630" width="963"><br>
+      <img
+        src="figures/Screen%20Shot%202019-03-24%20at%2011.18.28%20AM.png"
+        alt="page2" height="388" width="962"><br>
+      <img
+        src="figures/Screen%20Shot%202019-03-24%20at%2011.18.47%20AM.png"
+        alt="page3" height="546" width="962"><br>
+      <img
+        src="figures/Screen%20Shot%202019-03-24%20at%2011.19.04%20AM.png"
+        alt="page4" height="470" width="961"><br>
+      <img
+        src="figures/Screen%20Shot%202019-03-24%20at%2011.19.23%20AM.png"
+        alt="page5" height="407" width="965"><br>
+      <img
+        src="figures/Screen%20Shot%202019-03-24%20at%2011.42.19%20AM.png"
+        alt="page6" height="400" width="965"><br>
+      <br>
+      <br>
+    </font>
+    <hr size="2" width="100%"><br>
+    <font size="+1"><i>Hard Threshold Signal or Soft Threshold Signal <br>
+        <br>
+      </i>These functions remove the signal and keep the noise.&nbsp;
+      This might be useful for ambient noise correlation studies to
+      obtain noise Green's functions.<br>
+      <br>
+      <img
+        src="figures/Screen%20Shot%202018-05-10%20at%208.42.07%20PM.png"
+        alt="remove signal" height="271" width="755"><br>
+      Here's an example of removing the explosion source from the
+      inferred noise field using the hard thresholding method:<br>
+      <br>
+      <br>
+      <img
+        src="figures/Screen%20Shot%202019-03-24%20at%2011.32.49%20AM.png"
+        alt="hard threshold signal" height="553" width="924"><br>
+      <br>
+      <br>
+      <br>
+    </font>
+    <hr size="2" width="100%"><font size="+1"><i>SNR Detector</i><br>
+      <br>
+      A signal detector based on the Signal-to-Noise Ratio (SNR) is
+      implemented with this menu item.&nbsp; A Signal-to-Noise
+      seismogram is computed by dividing the noise (plus a "water level"
+      parameter) into the CWT of the entire seismogram.&nbsp; Each CWT
+      coefficient is replaced by the ratio of the original complex
+      coefficient by the absolute value of the noise estimate plus a
+      percentage of the maximum value of the noise.&nbsp; <i>N lower
+        bound</i> (see above figure) is the parameter that defines this
+      percentage.<br>
+      <br>
+      <img
+        src="figures/Screen%20Shot%202019-03-24%20at%2011.29.09%20AM.png"
+        alt="SNR Result" height="558" width="929"><br>
+    </font>
+    <hr size="2" width="100%"><br>
+    <font size="+1"><font size="+1"><a
+          href="file:///Users/cal/matlab/denoising/bc_v1.0/Help/help.html">To
+
+
+          Main Menu</a><br>
+        <br>
+      </font> </font>
+  </body>
+</html>
