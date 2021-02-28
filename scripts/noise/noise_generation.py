@@ -3,26 +3,27 @@
 # %% Imports
 import sys
 import os
-sys.path.append(os.path.abspath("/Users/gabriel/Documents/Research/USGS_Work/gmprocess/scripts/noise/"))
-sys.path.append(os.path.abspath("/Users/gabriel/Documents/Research/USGS_Work/gmprocess/scripts/synthetics/"))
+sys.path.append(os.path.abspath("/Users/gabriel/Documents/Research/USGS_Work/gmprocess_scratchpaper/scripts/noise/"))
+sys.path.append(os.path.abspath("/Users/gabriel/Documents/Research/USGS_Work/gmprocess_scratchpaper/scripts/synthetics/"))
 
 import glob
 import numpy as np
 import pandas as pd
-import matplotlib as mpl
+import matplotlib as mplq
 import matplotlib.pyplot as plt
 from scipy import signal as sig
 from obspy import read
 import obspy.signal.filter
 from obspy import Trace
 from obspy.core.stream import Stream
+
 # from synthetics.synthetics import read_synthetic_streams
 from synthetics import read_synthetic_streams
 
 # %% Functions
 
 
-def fftnoise(f):
+def gen_fft_noise(f):
     f = np.array(f, dtype='complex')
     Np = (len(f) - 1) // 2
     phases = np.random.rand(Np) * 2 * np.pi
@@ -37,12 +38,16 @@ def gen_band_limited_noise(min_freq, max_freq, samples=1024, sampling_rate=1):
     f = np.zeros(samples)
     idx = np.where(np.logical_and(freqs >= min_freq, freqs <= max_freq))[0]
     f[idx] = 1
-    noise = fftnoise(f)
+    noise = gen_fft_noise(f)
     if not any(noise != 0.0):
         print("Calculated noise is zero, exiting")
     else:
         return noise
-    # return fftnoise(f)
+    # return gen_fft_noise(f)
+
+# def gen_boore_noise(model='NHNM', npts=1798):
+
+
 
 def add_band_limited_noise(signal,noise):
     if len(signal) == len(noise):
@@ -89,31 +94,49 @@ def generate_starting_signal(A=1, f=5, t_min=0, t_max=60, samp_interv=0.001):
     return t, signal
 
 
-def read_noise(quantity="vel", y_units="dB", filename="", path ="/Users/gabriel/Documents/Research/USGS_Work/gmprocess/scripts/noise/data/csv/"):
-    dir_list = glob.glob(path + "*" + quantity + "*")
-    for i in range(len(dir_list)):
-        dir_list[i] = dir_list[i].split("/")[-1]
+def read_noise(quantity="vel", y_units="dB", filename="", path ="/Users/gabriel/Documents/Research/USGS_Work/gmprocess_scratchpaper/scripts/noise/data/csv/"):
+
+    NHNM_dir_list = glob.glob(path + "NHNM/*" + quantity + "*")
+    NLNM_dir_list = glob.glob(path + "NLNM/*" + quantity + "*")
+
+    for i in range(len(NHNM_dir_list)):
+        NHNM_dir_list[i] = NHNM_dir_list[i].split("/")[-1]
+    for i in range(len(NLNM_dir_list)):
+        NLNM_dir_list[i] = NLNM_dir_list[i].split("/")[-1]
+
+    dir_lists = [NHNM_dir_list, NLNM_dir_list]
 
     NHNM = Stream()
     NLNM = Stream()
 
-    for idx, obj in enumerate(dir_list):
-        noise = pd.read_csv(path + str(obj))
+    for dir_list in dir_lists:
+        for idx, obj in enumerate(dir_list):
 
-        t = np.array(noise["time"])
-        amp = np.array(noise["amplitude"])
+            if "high" in obj:
+                noise = pd.read_csv(path + "NHNM/" + str(obj))
 
-        npts = len(t)
-        delta = (max(t) - min(t)) / len(t)
+            elif "low" in obj:
+                noise = pd.read_csv(path + "NLNM/" + str(obj))
+            else:
+                print("\nIssue identifying correct model. Exiting ...")
+                break
 
-        tr = Trace(amp)
-        tr.stats.npts = npts
-        tr.stats.delta = delta
+            t = np.array(noise["time"])
+            amp = np.array(noise["amplitude"])
 
-        if "high" in obj:
-            NHNM += tr
-        elif "low" in obj:
-            NLNM += tr
+            npts = len(t)
+            delta = (max(t) - min(t)) / len(t)
+
+            tr = Trace(amp)
+            tr.stats.npts = npts
+            tr.stats.delta = delta
+
+            if "high" in obj:
+                NHNM += tr
+            elif "low" in obj:
+                NLNM += tr
+
+
 
     return [NHNM, NLNM]
 
@@ -470,10 +493,11 @@ save_noisy = "/Users/gabriel/Documents/Research/USGS_Work//gmprocess/scripts/syn
 #     filename = "noise-" + model + "_" + quantity + "_" + units + "_" + str(i)
 
 #     write_noise(tr, filename, path=noise)
+
 #%% Re-read to check
-noise = "/Users/gabriel/Documents/Research/USGS_Work/gmprocess/scripts/noise/data/miniseed/"
-noise = "/Users/gabriel/Documents/Research/USGS_Work/gmprocess/scripts/noise/data/miniseed/noisy/"
-save = "/Users/gabriel/Documents/Research/USGS_Work//gmprocess/scripts/synthetics/data/miniseed/"
+# noise = "/Users/gabriel/Documents/Research/USGS_Work/gmprocess_scratchpaper/scripts/noise/data/miniseed/"
+# noise = "/Users/gabriel/Documents/Research/USGS_Work/gmprocess_scratchpaper/scripts/noise/data/miniseed/noisy/"
+# save = "/Users/gabriel/Documents/Research/USGS_Work//gmprocess_scratchpaper/scripts/synthetics/data/miniseed/"
 
 # read_test = read(noise + "NHNM-rand*.ms")
 
@@ -515,8 +539,8 @@ save = "/Users/gabriel/Documents/Research/USGS_Work//gmprocess/scripts/synthetic
 
 #### Just turn into another function ####
 
-save_noise = "/Users/gabriel/Documents/Research/USGS_Work/gmprocess/scripts/noise/data/miniseed/stochastic/"
-save_fig = "/Users/gabriel/Documents/Research/USGS_Work/gmprocess/figs/noise_generation/stochastic/"
+save_noise = "/Users/gabriel/Documents/Research/USGS_Work/gmprocess_scratchpaper/scripts/noise/data/miniseed/stochastic/"
+save_fig = "/Users/gabriel/Documents/Research/USGS_Work/gmprocess_scratchpaper/figs/noise_generation/stochastic/"
 
 N_series = 50
 nsamp = 1798
@@ -537,4 +561,4 @@ for i in range(N_series):
     filename = "stochastic_noise-" + str(i)
 
     tr.plot(outfile=save_fig + filename + ".png")
-    tr.write(save_noise + filename + ".ms", format="MSEED")
+    # tr.write(save_noise + filename + ".ms", format="MSEED")

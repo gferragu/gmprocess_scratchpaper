@@ -85,7 +85,8 @@ def process_synthetics(signal, samp_interv=0.02559485, nsamp=1798, multistation=
         t = np.linspace(t_min, t_max, nsamp)
         return t, signal
 
-def read_synthetic_streams(filename="*.ms", path="/Users/gabriel/Documents/Research/USGS_Work/gmprocess/scripts/synthetics/data/miniseed/clean/"):
+def read_synthetic_streams(filename="*.ms", path="/Users/gabriel/Documents/Research/USGS_Work/gmprocess_scratchpaper/scripts/synthetics/data/miniseed/clean/"):
+    print("\nNote: Synthetics are in m/s \n")
     dir_list = glob.glob(path + filename)
     # streams = np.zeros(len(dir_list), dtype=object)
     streams = []
@@ -95,7 +96,7 @@ def read_synthetic_streams(filename="*.ms", path="/Users/gabriel/Documents/Resea
 
     return streams
 
-def save_synthetics(stream, file_format="MSEED", filename="default", path="/Users/gabriel/Documents/Research/USGS_Work/gmprocess/scripts/synthetics/data/miniseed/clean/"):
+def save_synthetics(stream, file_format="MSEED", filename="default", path="/Users/gabriel/Documents/Research/USGS_Work/gmprocess_scratchpaper/scripts/synthetics/data/miniseed/clean/"):
     if file_format == "MSEED":
         stream.write(path + filename + ".", format="MSEED")
     else:
@@ -139,9 +140,9 @@ def save_synthetics(stream, file_format="MSEED", filename="default", path="/User
 
 
 # %% Script
-data_path = "/Users/gabriel/Documents/Research/USGS_Work/gmprocess/test_data/synthetic/"
-# fig_path = "/Users/gabriel/Documents/Research/USGS_Work/gmprocess/figs/noise_generation/"
-fig_path = "/Users/gabriel/Documents/Research/USGS_Work/gmprocess/figs/synthetics/"
+data_path = "/Users/gabriel/Documents/Research/USGS_Work/gmprocess_scratchpaper/test_data/synthetic/"
+# fig_path = "/Users/gabriel/Documents/Research/USGS_Work/gmprocess_scratchpaper/figs/noise_generation/"
+fig_path = "/Users/gabriel/Documents/Research/USGS_Work/gmprocess_scratchpaper/figs/synthetics/"
 
 
 npts=1798
@@ -197,8 +198,8 @@ st2 = Stream()
 
 # %% Test Reading miniseed back in
 
-test1 = read("/Users/gabriel/Documents/Research/USGS_Work/gmprocess/test_data/synthetic/wasatch_synth1_horzXY.ms")
-test2 = read("/Users/gabriel/Documents/Research/USGS_Work/gmprocess/test_data/synthetic/wasatch_synth2_horzXY.ms")
+test1 = read("/Users/gabriel/Documents/Research/USGS_Work/gmprocess_scratchpaper/test_data/synthetic/wasatch_synth1_horzXY.ms")
+test2 = read("/Users/gabriel/Documents/Research/USGS_Work/gmprocess_scratchpaper/test_data/synthetic/wasatch_synth2_horzXY.ms")
 
 test1.plot()
 test2.plot()
@@ -238,30 +239,30 @@ fig_name2 = "psd_synth_seismogram-"
 
 # Take FFT of synthetics
 
-data = [st1,st2]
+data = [st1, st2]
 spectra = []
 PSD = []
 
-for idx,stream in enumerate(data):
+for idx, stream in enumerate(data):
     for tr in stream:
         nfft = tr.stats.npts
         delta = tr.stats.delta
-        tmax=nfft*delta
+        tmax = nfft * delta
         fs = tr.stats.sampling_rate
-        stnm = str(idx+1)
+        stnm = str(idx + 1)
         chan = tr.stats.channel
 
-        t = [0,tmax,delta]
+        t = [0, tmax, delta]
         amp = tr.data
 
-        ft = np.abs(np.fft.rfft(amp,nfft))
+        ft = np.abs(np.fft.rfft(amp, nfft))
         freq = np.fft.rfftfreq(nfft)
         spectra.append([freq, ft, stnm, chan])
 
         power = []
-        for iidx,Y_k in enumerate(ft):
+        for iidx, Y_k in enumerate(ft):
             print(Y_k)
-            P_k = ((2*delta)/nfft)*abs(ft[iidx])**2
+            P_k = ((2 * delta) / nfft) * abs(ft[iidx])**2
             print(P_k)
             power.append(P_k)
 
@@ -289,7 +290,5 @@ for dat in PSD:
 
 
 #%% Adding noise
-
-
 
 test = read_synthetic_streams()

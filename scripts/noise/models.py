@@ -2,31 +2,18 @@
 
 import numpy as np
 import pandas as pd
-from scipy import signal as sig
 import matplotlib.pyplot as plt
+
+from scipy import signal as sig
 from scipy.interpolate import interp1d
-# %% Eventually make some classes
 
-# class noise():
+from obspy import read
+from obspy import Trace
+from obspy.core.stream import Stream
+from obspy.signal import PPSD
 
-#     def __init__(self):
-#         self.npts = 1798
-#         self.fs = 39.07035985754947
-#         self.dt = 0.02559485
-#         self.t = np.arange(0, (self.npts * self.dt), self.dt)
-
-
-# class NHNM():
-
-#     def __init__(self):
-#         self.model = "NHNM"
-
-
-# class NLNM():
-
-#     def __init__(self):
-#         self.model = "NLNM"
-
+# plt.style.use('ggplot')
+plt.style.use('seaborn')
 
 # %% Peterson (1993) - OFR 93-322 - New High/Low Noise Model (NHNM/NLNM)
 
@@ -35,7 +22,7 @@ def to_dB(signal):
     dB_series = np.zeros(N)
 
     for i in range(N):
-        dB_series[i] = 10*np.log10(signal[i])
+        dB_series[i] = 10 * np.log10(signal[i])
 
     return dB_series
 
@@ -64,8 +51,6 @@ def to_Period(frequency):
     Hz_series = np.zeros(N)
     for i in range(N):
         if frequency[i] == 0.0:
-            # frequency[i] == 0.00001
-            # Hz_series[i] = 1 / frequency[i]
             Hz_series[i] = 1 / 0.00001
 
         else:
@@ -96,15 +81,11 @@ def get_coeffs(model="high"):
         return None
 
 
-def get_model_interp(interp_mode="log", model="high", quantity="acc", x_units="T", y_units="dB", npts=1800, delta=0.01):
+def get_model_interp(interp_mode="log", model="high", quantity="acc", x_units="T", y_units="dB", npts=1798, delta=0.01):
     # change delta to df of dT
     if y_units == "dB" or y_units == "SI":
         if model == "high":
             x, acc = NHNM(quantity=quantity, units=y_units)
-
-            # if x_units == "f":
-            #     x = to_Hz(x)
-            #     delta = 1 / delta
 
             if interp_mode == "log":
                 log_x = np.log10(x)
@@ -123,10 +104,6 @@ def get_model_interp(interp_mode="log", model="high", quantity="acc", x_units="T
         elif model == "low":
             x, acc = NLNM(quantity=quantity, units=y_units)
 
-            # if x_units == "f":
-            #     x = to_Hz(x)
-            #     delta = 1 / delta
-
             if interp_mode == "log":
                 log_x = np.log10(x)
                 delta = (max((log_x)) - min((log_x))) / (npts / 2)
@@ -149,81 +126,58 @@ def get_model_interp(interp_mode="log", model="high", quantity="acc", x_units="T
         print("Invalid units. Choose dB or SI")
         return None
 
+# def get_power(model="high", quantity="acc", units="dB", delta=0.01):
+#     if units == "dB" or units == "SI":
+#         if model == "high":
+#             log_T, NHNM = get_model_interp(model="high",
+#                                            quantity=quantity,
+#                                            units=units, delta=delta)
+#             P = np.zeros(len(log_T))
+#             for i in range(len(log_T)):
+#                 P[i] = NHNM(log_T[i])[()]
+#             return [log_T, P]
 
-def get_power(model="high", quantity="acc", units="dB", delta=0.01):
-    if units == "dB" or units == "SI":
-        if model == "high":
-            log_T, NHNM = get_model_interp(model="high",
-                                           quantity=quantity,
-                                           units=units, delta=delta)
-            P = np.zeros(len(log_T))
-            for i in range(len(log_T)):
+#         elif model == "low":
+#             log_T, NLNM = get_model_interp(model="low",
+#                                            quantity=quantity,
+#                                            units=units, delta=delta)
+#             P = np.zeros(len(log_T))
+#             for i in range(len(log_T)):
+#                 P[i] = NLNM(log_T[i])[()]
+#             return [log_T, P]
 
-                P[i] = NHNM(log_T[i])[()]
-            return [log_T, P]
-
-        elif model == "low":
-            log_T, NLNM = get_model_interp(model="low",
-                                           quantity=quantity,
-                                           units=units, delta=delta)
-            P = np.zeros(len(log_T))
-            for i in range(len(log_T)):
-
-                P[i] = NLNM(log_T[i])[()]
-            return [log_T, P]
-
-        else:
-            print("Invalid model choice. Select: 'high' or 'low'")
-            return None
-    else:
-        print("Invalid units. Choose dB or SI")
-        return None
+#         else:
+#             print("Invalid model choice. Select: 'high' or 'low'")
+#             return None
+#     else:
+#         print("Invalid units. Choose dB or SI")
+#         return None
 
 
-def get_octaves(minfreq ,maxfreq):
-    n = (1 / np.log2((maxfreq / minfreq)))
-    return n
-
-
-def get_center_freq(minfreq, octaves):
-    f0 = minfreq * (2**(octaves / 2))
-    return f0
-
-
-def get_rbw(n, minfreq, maxfreq, f0, octaves=True, freq=False):
-    if octaves:
-        rbw = ((2**octaves) - 1) / (2**(octaves / 2))
-        return rbw
-    elif freq:
-        if not None in [minfreq, maxfreq, f0]:
-            rbw = (maxfreq - minfreq) / f0
-            return rbw
-    else:
-        print("Invalid option")
-        return None
-
-
-def get_rand_phase(N):
-    phases = np.random.rand(N) * 2 * np.pi
-    return phases
-
-
-def get_uniform_rand_phase(phase_min, phase_max, N):
+def get_uniform_rand_phase(phase_min, phase_max, N, plot_checks=False):
     phases = np.random.uniform(phase_min, phase_max, N)
     rad = np.arange(0, N)
 
-    plt.close()
-    plt.title("Function Check: Phase via Numpy Random-Uniform")
-    # plt.plot(rad, phases)
-    plt.scatter(rad, phases)
-    plt.xlabel("Phase (Random on 0 - 2pi)")
-    plt.ylabel("N")
-    plt.show()
+    if plot_checks:
+        plt.close()
+        plt.title("Function Check: Phase via Numpy Random-Uniform")
+        plt.scatter(rad, phases)
+        plt.xlabel("N")
+        plt.ylabel("Phase (Random on 0 - 2pi)")
+        plt.show()
+
+        plt.close()
+        plt.title("Function Check: Phase via Numpy Random-Uniform")
+        plt.hist(phases, 20, label="Uniformly sampled mostly")
+        plt.ylabel("Counts")
+        plt.xlabel("Phase (Random on 0 - 2pi)")
+        plt.legend()
+        plt.show()
 
     return phases
 
 
-def get_spectral_amplitude1(psd):
+def get_spectral_amplitude(psd, interp_mode):
     if any(val < 0 for val in psd):
         print("\nNegative values, units likely in dB, attempting to convert ...\n")
         psd_SI = np.zeros(len(psd))
@@ -232,24 +186,27 @@ def get_spectral_amplitude1(psd):
         psd = psd_SI
 
     amp = np.zeros_like(psd)
-
     for i in range(len(psd)):
         amp[i] = np.sqrt(2 * psd[i])
 
     plt.close()
+    if interp_mode == 'log':
+        plt.semilogy(amp)
+    else:
+        plt.loglog(amp)
+
     plt.title("Function Check: get_spectral_amplitude() output")
-    plt.plot(amp)
-    plt.xlabel("N")
+    plt.xlabel("Sample N from PSD (corresponds to Period)")
     plt.ylabel("Spectral Amplitude")
     plt.show()
 
     return amp
 
 
-def rand_phase_PSD_signal(freq, psd, phase):
+def rand_phase_PSD_signal(freq, psd, phase, interp_mode):
     N = len(psd)
     Z = np.zeros(N, dtype="complex")
-    A = get_spectral_amplitude1(psd)
+    A = get_spectral_amplitude(psd, interp_mode)
     img = np.sqrt(-1 + 0j)
     if len(freq) == len(psd) == len(phase):
         for i in range(N):
@@ -258,18 +215,6 @@ def rand_phase_PSD_signal(freq, psd, phase):
     else:
         print("\nInput arrays must be of equal size\n")
         return None
-
-    plt.close()
-    plt.plot(A)
-    plt.title("Spectral Amplitude from PSD")
-    plt.xlabel("Amplitude")
-    plt.ylabel("Period")
-    plt.show()
-
-    plt.close()
-    plt.plot(Z)
-    plt.title("Random Phase Signal in Freq. Domain")
-    plt.show()
 
 def NHNM(quantity="acc", units="dB", P=None):
     NHNM_coeffs = pd.read_csv('./noise_models/NHNM-coeffs.txt')
@@ -282,17 +227,17 @@ def NHNM(quantity="acc", units="dB", P=None):
         B = np.array(NHNM_coeffs["B"])
 
         if quantity == "acc":
-            acc = A + B*(np.log10(P))
-            return  [P, acc]
+            acc = A + (B * (np.log10(P)))
+            return [P, acc]
 
         elif quantity == "vel":
             p, acc = NHNM(quantity="acc")
-            vel = acc + 20.0*np.log10(P/(2*np.pi))
+            vel = acc + (20.0 * np.log10(P / (2 * np.pi)))
             return [P, vel]
 
         elif quantity == "disp":
             p, vel = NHNM(quantity="vel")
-            disp = vel + 20.0*np.log10(P**2/(2*np.pi)**2)
+            disp = acc + (20.0 * np.log10(P**2 / (2 * np.pi)**2))
             return [P, disp]
         else:
             print("Unacceptable argument for quantity")
@@ -301,7 +246,7 @@ def NHNM(quantity="acc", units="dB", P=None):
             P = np.array(NHNM_SI["T [s]"])
         if quantity == "acc":
             acc = np.array(NHNM_SI["Pa [m2s-4/Hz]"])
-            return  [P, acc]
+            return [P, acc]
 
         elif quantity == "vel":
             vel = np.array(NHNM_SI["Pv [m2s-2/Hz]"])
@@ -337,7 +282,7 @@ def NLNM(quantity="acc", units="dB", P=None):
 
         elif quantity == "disp":
             p, vel = NLNM(quantity="vel")
-            disp = vel + 20.0 * np.log10(P**2 / (2 * np.pi)**2)
+            disp = acc + 20.0 * np.log10(P**2 / (2 * np.pi)**2)
             return [P, disp]
         else:
             print("Unacceptable argument for quantity")
@@ -363,120 +308,6 @@ def NLNM(quantity="acc", units="dB", P=None):
         print("Invalid units. Choose dB or SI")
         return None
 
-
-
-# %% Implement finer, regular sampling
-
-
-#%% Plotting things up
-
-#%% Acceleration
-def plot_acc_NHNM(log=True, save=False, path='./'):
-    P, spectra = NHNM(quantity="acc")
-    fig = plt.figure()
-    plt.plot(P, spectra, label="NHNM")
-    plt.title("NHNM Station PSD after Peterson (1993)")
-    plt.xlabel("Period (s)")
-    plt.ylabel("Power Spectral Density (m/s^2)^2/Hz")
-    ax = plt.gca()
-    if log:
-        ax.set_xscale('log')
-    plt.legend(loc=1)
-
-    if save:
-        plt.savefig(fname='/Users/gabriel/Documents/Research/USGS_Work/gmprocess/figs/models/NHNM_power_spectrum.png',dpi=500)
-
-    return fig
-
-
-def plot_acc_NLNM(log=True, save=False, path='./'):
-    P, spectra = NLNM(quantity="acc")
-    fig = plt.figure()
-    plt.plot(P, spectra, 'orange',label="NLNM")
-    plt.title("NLNM Station PSD after Peterson (1993)")
-    plt.xlabel("Period (s)")
-    plt.ylabel("Power Spectral Density (m/s^2)^2/Hz")
-    ax = plt.gca()
-    if log:
-        ax.set_xscale('log')
-    plt.legend(loc=1)
-
-    if save:
-        plt.savefig(fname='/Users/gabriel/Documents/Research/USGS_Work/gmprocess/figs/models/NLNM_power_spectrum.png',dpi=500)
-
-    return fig
-
-#%% Velocity
-def plot_vel_NHNM(log=True, save=False, path='./'):
-    P, spectra = NHNM(quantity="vel")
-    fig = plt.figure()
-    plt.plot(P, spectra, label="NHNM")
-    plt.title("NHNM Station Velocity/Hz after Peterson (1993)")
-    plt.xlabel("Period (s)")
-    plt.ylabel("Spectral Density (m/s)^2/Hz")
-    ax = plt.gca()
-    if log:
-        ax.set_xscale('log')
-    plt.legend(loc=1)
-
-    if save:
-        plt.savefig(fname='/Users/gabriel/Documents/Research/USGS_Work/gmprocess/figs/models/NHNM_velocity_spectra.png',dpi=500)
-
-    return fig
-
-
-def plot_vel_NLNM(log=True, save=False, path='./'):
-    P, spectra = NLNM(quantity="vel")
-    fig = plt.figure()
-    plt.plot(P, spectra, 'orange', label="NLNM")
-    plt.title("NLNM Station Velocity/Hz after Peterson (1993)")
-    plt.xlabel("Period (s)")
-    plt.ylabel("Spectral Density (m/s)^2/Hz")
-    ax = plt.gca()
-    if log:
-        ax.set_xscale('log')
-    plt.legend(loc=1)
-
-    if save:
-        plt.savefig(fname='/Users/gabriel/Documents/Research/USGS_Work/gmprocess/figs/models/NLNM_velocity_spectra.png',dpi=500)
-
-    return fig
-
-#%% Displacement
-def plot_disp_NHNM(log=True, save=False, path='./'):
-    P, spectra = NHNM(quantity="disp")
-    fig = plt.figure()
-    plt.plot(P, spectra, label="NHNM")
-    plt.title("NHNM Station Displacement/Hz after Peterson (1993)")
-    plt.xlabel("Period (s)")
-    plt.ylabel("Spectral Density m^2/Hz")
-    ax = plt.gca()
-    if log:
-        ax.set_xscale('log')
-    plt.legend(loc=1)
-
-    if save:
-        plt.savefig(fname='/Users/gabriel/Documents/Research/USGS_Work/gmprocess/figs/models/NHNM_displacement_spectra.png',dpi=500)
-
-    return fig
-
-
-def plot_disp_NLNM(log=True, save=False, path='./'):
-    P, spectra = NLNM(quantity="disp")
-    fig = plt.figure()
-    plt.plot(P, spectra, 'orange', label="NLNM")
-    plt.title("NLNM Station Displacement/Hz after Peterson (1993)")
-    plt.xlabel("Period (s)")
-    plt.ylabel("Spectral Density m^2/Hz")
-    ax = plt.gca()
-    if log:
-        ax.set_xscale('log')
-    plt.legend(loc=1)
-
-    if save:
-        plt.savefig(fname='/Users/gabriel/Documents/Research/USGS_Work/gmprocess/figs/models/NLNM_displacement_spectra.png',dpi=500)
-
-    return fig
 
 #%% Plotting both models
 def plot_acc_NHNM_and_NLNM(log=True, save=False, path='./'):
@@ -541,130 +372,273 @@ def plot_disp_NHNM_and_NLNM(log=True, save=False, path='./'):
 
     return fig
 
-#%%
-
-#%% Without interpolating, check new SI plots
-
-# T1, P1 = NHNM("acc", "SI")
-# T2, P2 = NLNM("acc", "SI")
-T1, P1 = NHNM("vel", "dB")
-T2, P2 = NLNM("vel", "dB")
-
-# # plt.loglog(T1,P1)
-# # plt.loglog(T2,P2)
-# plt.semilogx(T1,P1)
-# plt.semilogx(T2,P2)
-# plt.show()
-
-# ####RESAMPLE TEST####
-# N = 100000
-# T1_resample = sig.resample(T1, N)
-# P1_resample = sig.resample(P1, N)
-# # P2_resample = sig.resample(P2, 256)
-# plt.semilogx(P1_resample)
-# # plt.plot(P2_resample)
-# plt.show()
-
-
-# #####################
-
 #%% More Functions
 
-# def sample_model():
-#     return
+def assemble_signal(interp_mode="log", model="high",
+                    quantity="acc", x_units="T", y_units="dB",
+                    npts=1798, delta=0.02559485, plot_checks=False):
 
+    M = 2 * npts
 
-# def check_noise_PSD(t, signal, norm=False, frequency=True):
-#     ### Manually calcuating a PSD to check
-#     spectrum = []
-#     if norm:
-#         spectrum = np.abs(np.fft.rfft(signal, norm="ortho"))
-#     else:
-#         spectrum = np.abs(np.fft.rfft(signal))
+    [T, P] = get_model_interp(interp_mode=interp_mode,
+                              model=model, quantity=quantity,
+                              x_units=x_units, y_units=y_units,
+                              npts=M, delta=delta)
 
-#     power = (spectrum**2)
-#     spec_r_dB = 10 * np.log10(spec_r)
-#     power_dB = 10 * np.log10(power)
+    amplitude_spectrum = P(T)
+    amplitude_spectrum = 10**(amplitude_spectrum / 10)
 
-#     if frequency:
-#         f_r = np.fft.rfftfreq(len(signal))
+    phase = get_uniform_rand_phase(0, (2 * np.pi), int(M / 2))
 
-#         return [f_r, power_dB]
-#     else:
-#         t_r = to_Period(f_r)
+    amplitude_r = amplitude_spectrum * np.cos(phase)
+    amplitude_i = amplitude_spectrum * np.sin(phase)
+    ifft_complex2 = amplitude_r + amplitude_i * 1j
 
-#         return [t_r, power_dB]
+    signal = np.fft.ifft(ifft_complex2)
+    signal_r = np.real(signal)
+    signal_i = np.imag(signal)
 
+    # Build time array
+    tmax = (npts * delta)
+    t = np.arange(0, tmax, delta)
 
-def get_time_array(T, P, signal, npts, delta=0.001):
-    max_freq = max(T)
-    if max_freq > 10.0:
-        print("\nLarge f values, input likely in seconds not Hz, using Hz ...\n")
-        max_freq = 1 / min(T)
+    if plot_checks:
+        if model == "high":
+            label = "NHNM"
 
-    M = len(T)
-    N = (M - 1) * 2
-    # N = (M) * 2
-    dt = 1 / (2 * max_freq)
+        elif model == "low":
+            label = "NLNM"
 
-    print(T)
-    print("\nMax frequency or period: " + str(max_freq))
-    print("\nN: " + str(N))
-    print("\nM: " + str(M))
-    print("\nValue of dt: " + str(dt))
-    print("\nValue of delta: " + str(delta))
+        plt.plot(t, signal_r, label=quantity)
+        plt.title(label + ": Reconstructed Time Series (Real)")
+        plt.xticks(np.arange(0, max(t), 5))
+        plt.xlabel("Time (s)")
+        plt.ylabel("Amplitude")
+        plt.legend()
+        plt.show()
 
+        plt.scatter(signal_r, signal_i, label="Discrete points in Complex Signal")
+        plt.title("Polar Plot of Reconstructed Time Series in Complex Plane")
+        plt.xlabel("Real Signal")
+        plt.ylabel("Imag. Signal")
+        plt.legend()
+        plt.show()
 
-    # t = np.arange(0, N * dt, dt)
-    # t = np.arange(0, (N - 1) * dt, dt)
-    t = np.arange(0, N * delta, delta)
+        # Informative, but takes a little while to plot
+        # plt.figure()
+        # for p in signal:
+        #     plt.polar([0, np.angle(p)], [0, np.abs(p)], marker='o')
+        # plt.title("Phase of Reconstructed Time Series in Complex Plane")
+        # plt.xlabel("Real", labelpad=10)
+        # plt.ylabel("Imaginary", labelpad=35)
+        # plt.tight_layout()
+        # plt.show()
 
-    return t
+        # plt.title("Histogram of Signal")
+        # plt.hist(signal, bins=20, label=model)
+        # plt.legend()
+        # plt.show()
 
+    return [t, signal_r]
 
-def assemble_signal(interp_mode="log", model="high", quantity="acc", x_units="T", y_units="SI", npts=1798, delta=0.02559485):
-    [T, P] = get_model_interp(interp_mode=interp_mode, model=model, quantity=quantity, x_units=x_units, y_units=y_units, delta=delta)
+def generate_noise_boore(model='NHNM', npts=1798, dt = 0.02559485):
+    # Get appropriate model to use in the Boore (2003) method
+    model_coeffs = pd.DataFrame()
 
-    print("\nValues of T/Freq: ")
-    print(T)
-    print("\nLength of T/Freq is: " + str(len(T)))
+    if model == 'NHNM':
+        print("\nGrabbing NHNM model coeffiecients ... \n")
+        model_coeffs = pd.read_csv('./noise_models/NHNM-coeffs.txt')
+    elif model == 'NLNM':
+        print("\nGrabbing NLNM model coeffiecients ... \n")
+        model_coeffs = pd.read_csv('./noise_models/NLNM-coeffs.txt')
+    else:
+        print("Invalid model selection ... Exiting ...")
 
-    M = len(T)
-    N = (M - 1) * 2
+    A = np.array(model_coeffs["A"])
+    B = np.array(model_coeffs["B"])
 
-    psd = np.zeros(M)
-    for i in range(M):
-        log_P = P(T[i])
-        psd[i] = log_P
+    # Calculate the model values from coefficients
+    model_period = np.array(model_coeffs["P"])
+    model_acc = A + B * (np.log10(model_period))
 
-    phase = get_uniform_rand_phase(0, (2 * np.pi), M)
-    Z = rand_phase_PSD_signal(T, psd, phase)
+    # Create function for interpolation of these values
+    interp = interp1d(model_period, model_acc,
+                      kind="linear", fill_value='extrapolate')
 
-    # signal = np.fft.irfft(Z, n=npts, norm="ortho")
-    # signal = np.fft.irfft(Z, n=(npts / 2), norm="ortho")
-    # signal = np.fft.irfft(Z, norm="ortho")
-    signal = np.fft.irfft(Z)
-
-    t = get_time_array(T, psd, signal, npts, delta)
-
-    plt.close()
-    plt.plot(t, signal)
-    plt.title("Function Check: Ouput of 'assemble_signal()'")
-    plt.xlabel("Time (s)")
-    plt.ylabel("Velocity (m/s)")
+    ##################################
+    ##### Temporary Plot Check  ######
+    ##################################
+    plt.figure()
+    plt.semilogx(model_period, model_acc, label=model)
+    plt.title("Check Intermediate Step: Pre Interpolation Noise Model ")
+    plt.ylabel('PSD (vel) 10log_10([m/s]^2/[Hz])', fontweight="bold")
+    plt.xlabel('Period (S)', fontweight="bold")
+    plt.legend()
     plt.show()
+    ##################################
 
-    return [t, signal, Z]
+    # Determine which points we want from the FT
+    FT_npts = npts
+    stop = (FT_npts - 1) * dt
+
+    # Create a stochastic time series (can mod std. dev. of this)
+    x = np.random.normal(0, 1, FT_npts)
+    t = np.linspace(0, stop, FT_npts)
+
+    # Construct array of +freq indeces we need
+    fft_idx = np.arange(int(FT_npts / 2), FT_npts)
+
+    # Take the FFT and shift zero freq term
+    sig_fft = (np.fft.fft(x) * dt)
+    freq = (np.fft.fftfreq(len(sig_fft), dt))
+
+    sig_fft = np.fft.fftshift(sig_fft)
+    freq = np.fft.fftshift(freq)
+
+    ##################################
+    ##### Temporary Plot Check  ######
+    ##################################
+    plt.figure()
+    plt.loglog(freq, np.abs(sig_fft), label="Stochastic Signal")
+    plt.title("Check Intermediate Step Signal: FFT ")
+    plt.ylabel('Spectral Amplitude', fontweight="bold")
+    plt.xlabel('Frequency (Hz)', fontweight="bold")
+    plt.legend()
+    plt.show()
+    ##################################
+
+    # Set zero freq term nonzero to avoid discontinuity
+    ind_zero = np.where(freq == 0.0)
+    freq_temp = freq.copy()
+    freq_temp[ind_zero] = 0.01   # changed from 1
+
+    # Take only positive freq terms and convert to period
+    freq_abs = np.abs(freq_temp)
+    period_freq_abs = (1 / freq_abs)
+    period_freq_abs[ind_zero] = 0.01  # changed from 1
+
+    # Interpolate the model values and get it out of dB ()
+    ''' The defining equation for decibels is
+
+        A = 10*log10(P2/P1)     (dB)
+
+        where P1 is the power being measured, and P1 is
+        the reference to which P2 is being compared.
+
+        To convert from decibel measure back to power ratio:
+
+        P2/P1 = 10^(A/10) '''
+
+    # Get the noise model and convert from dB to (presumably) (m/s^2) / Hz
+    NM_acc_i_dB = interp(period_freq_abs)
+
+    ##################################
+    ##### Temporary Plot Check  ######
+    ##################################
+    plt.figure()
+    plt.semilogx(period_freq_abs, NM_acc_i_dB, label=model)
+    plt.title("Check Intermediate Step Noise Model: Interpolated but *Before* Conversion from dB")
+    plt.ylabel('PSD (vel) 10log_10([m/s]^2/[Hz])', fontweight="bold")
+    plt.xlabel('Frequency (Hz)', fontweight="bold")
+    plt.legend()
+    plt.show()
+    ##################################
+
+    NM_acc_i = 10**(NM_acc_i_dB / 10)               # Scale wrong?
+    # NM_acc_i = 10**(np.sqrt(NM_acc_i_dB) / 10)    # Try sqrt?
+
+    ##################################
+    ##### Temporary Plot Check  ######
+    ##################################
+    plt.figure()
+    plt.semilogx(period_freq_abs, NM_acc_i, label=model)
+    plt.title("Check Intermediate Step Noise Model: *After* Conversion from dB")
+    plt.ylabel('Spectral Amplitude', fontweight="bold")
+    plt.xlabel('Frequency (Hz)', fontweight="bold")
+    plt.legend()
+    plt.show()
+    ##################################
+
+    # Get the mean square average
+    msa = np.sqrt(np.mean(np.abs(sig_fft)**2))
+
+    # Normalize the FFT of the signal by this
+    sig_fft_norm = sig_fft / msa
+
+    ##################################
+    ##### Temporary Plot Check  ######
+    ##################################
+    plt.figure()
+    plt.loglog(period_freq_abs, np.abs(sig_fft_norm), label="Stochastic Signal")
+    plt.title("Check Intermediate Step Signal: MSA Normalized")
+    plt.ylabel('Spectral Amplitude', fontweight="bold")
+    plt.xlabel('Frequency (Hz)', fontweight="bold")
+    plt.legend()
+    plt.show()
+    ##################################
+
+    # Multiply noise model and normalized FT
+    mod_fft = sig_fft_norm * NM_acc_i
+
+    # Transfer back to the time domain
+    sim_ifft = np.fft.ifft(mod_fft)
+
+    # Take the real component only
+    sim = np.real(sim_ifft)
+    sim_im = np.imag(sim_ifft)
+
+    # Check the FFT and phase of the signal
+    sim_fft = np.fft.fft(sim)
+    sim_fft_abs = np.abs(sim_fft)
+    sim_fft_phase = np.angle(sim_fft)
+
+    ##################################
+    ##### Temporary Plot Check  ######
+    ##################################
+    # plt.figure()
+    # plt.loglog(period_freq_abs, sim_fft_abs, label=model + " Modulated Stoch. Signal: FFT")
+    # plt.title("Check Intermediate Step Signal: FFT of Noise Modulated Stoch. Signal")
+    # plt.ylabel('Spectral Amplitude', fontweight="bold")
+    # plt.xlabel('Frequency (Hz)', fontweight="bold")
+    # plt.legend()
+    # plt.show()
+
+    fig, axs = plt.subplots(1, 2, figsize=(14, 6))
+    axs[0].set_title('FFT of Noise Modulated Stoch. Signal')
+    axs[0].loglog(period_freq_abs, sim_fft_abs, label=model + " Noise Modulated Stoch. Signal: FFT")
+    # axs[1].scatter(sim, sim_fft_phase, label=model +" Noise Modulated Signal Phase")
+    axs[1].scatter(sim, sim_im, label=model +" Noise Modulated Signal Phase")
+    axs[1].set_title('Checking Phase As Well')
+    axs[0].legend() ; axs[1].legend()
+    axs[0].set_ylabel('Spectral Amplitude', fontweight="bold")
+    axs[0].set_xlabel('Frequency (Hz)', fontweight="bold")
+    axs[1].set_ylabel('Imag. Signal', fontweight="bold")
+    axs[1].set_xlabel('Real Signal', fontweight="bold")
+    plt.show()
+    ##################################
+
+    # Return +freq portions of the arrays
+    return [t, sim, freq[fft_idx], NM_acc_i[fft_idx],
+            sim_fft_abs[fft_idx], sim_fft_phase[fft_idx]]
 
 
-def save_noise_csv(t, signal, filename = "", path = "/Users/gabriel/Documents/Research/USGS_Work/gmprocess/scripts/noise/data/"):
+
+def save_noise_csv(t, signal, filename="",
+                   path="/Users/gabriel/Documents/Research/USGS_Work/"
+                   "gmprocess_scratchpaper/scripts/noise/data/csv/"):
+
     datdf = {'time': t, 'amplitude': signal}
     df = pd.DataFrame(datdf)
     df.to_csv(path + filename + '.csv')
 
 
-#%% Test amplitude functions
+#%%################################################
+################ Scratch work below! ##############
+###################################################
 
+#%% Write noise to csv and then to miniseed
+
+### OK only dB units work for now ... ###
 """
 For the synthetics ...
 
@@ -674,102 +648,409 @@ This is a sampling rate of 39.07035985754947 Hz
 Total time is 46.019540299999996 seconds
 """
 
-# [t, signal, Z] = assemble_signal(interp_mode="log", model="high", quantity="vel", y_units="dB", delta=0.02559485)
-# [t, signal, Z] = assemble_signal(interp_mode="log", model="low", quantity="vel", y_units="dB", delta=0.02559485)
+N_series = 1
+# model = "low"
+# model = "high"
 
-# [t, signal, Z] = assemble_signal(interp_mode="log", model="high", quantity="acc", y_units="dB", delta=0.02559485)
-[t, signal, Z] = assemble_signal(interp_mode="log", model="low", quantity="acc", y_units="dB", delta=0.02559485)
+quantity = "vel"
 
-# plt.plot(t, signal)
-# plt.title("Plotting the assembled signal")
-# # plt.xlim(0,1798)
+units = "dB"
+# units = "SI"  # No idea what's up with this
+
+models = ["high", "low"]
+
+save_csv = True
+# Creating noise by constructing a random phase signal in freq. domain
+for mod in models:
+
+    for i in range(N_series):
+
+        [t, signal] = assemble_signal(model=mod, quantity=quantity,
+                                      y_units=units, npts=1798,
+                                      delta=0.02559485, plot_checks=True)
+
+        if mod == "high":
+            filename = "NHNM/noise-test-" + mod + "_" + quantity + \
+                                                "_" + units + "_ID-" + str(i)
+            if save_csv:
+                save_noise_csv(t, signal, filename=filename)
+
+        if mod == "low":
+            filename = "NLNM/noise-test-" + mod + "_" + quantity +  \
+                                                "_" + units + "_ID-" + str(i)
+            if save_csv:
+                save_noise_csv(t, signal, filename=filename)
+
+# Creating noise with the NNM modulated stochastic noise like Boore (2003)
+
+""" Using "NHNM or NLNM might be an invalid model choice, double check " """
+for mod in models:
+
+    for i in range(N_series):
+
+        if mod == "high":
+            [t, x, freq1, NHNM,
+             sim_abs, sim_phase] = generate_noise_boore(model='NHNM')
+
+            filename = "NHNM/boore-noise-test-" + mod + "_" + quantity + \
+                                                "_" + units + "_ID-" + str(i)
+            plt.plot(NHNM)
+            plt.title("Plot NHNM from generate_noise_boore() output")
+            plt.show()
+
+            if save_csv:
+                save_noise_csv(t, x, filename=filename)
+
+        if mod == "low":
+            [t, x, freq1, NLNM,
+             sim_abs, sim_phase] = generate_noise_boore(model='NLNM')
+
+            filename = "NLNM/boore-noise-test-" + mod + "_" + quantity +  \
+                                                "_" + units + "_ID-" + str(i)
+
+            plt.plot(NLNM)
+            plt.title("Plot NLNM from generate_noise_boore() output")
+            plt.show()
+
+            if save_csv:
+                save_noise_csv(t, x, filename=filename)
+
+#%% Read noise in as ObsPy trace
+
+san_check = "/Users/gabriel/Documents/Research/USGS_Work/gmprocess_scratchpaper/figs/sanity_checks/noise_generation/"
+boore_noise = '/Users/gabriel/Documents/Research/USGS_Work/gmprocess_scratchpaper/scripts/noise/data/miniseed/boore/'
+
+from noise_generation import read_noise, write_noise
+# Comparing low and high noise models
+
+# Read in noise using ObsPy, save as miniseed files
+[NHNM_st, NLNM_st] = read_noise(quantity="boore") #quantity is really just a keyword search
+
+#%% Plot Check
+NHNM_st.plot()
+NLNM_st.plot() # NLNM gets messed up prior to this, read_noise()?
+
+#%% Write Noise
+write_noise(NHNM_st, "NHNM/boore-noise-test-NHNM-vel", path=boore_noise)
+write_noise(NLNM_st, "NLNM/boore-noise-test-NLNM-vel", path=boore_noise)
+
+
+#%% Add some noise to the synthetics
+from noise_generation import add_modeled_noise
+from synthetics import read_synthetic_streams
+
+synths = read_synthetic_streams()
+
+# Just get Trace object
+NHNM_noise = NHNM_st[0]
+NLNM_noise = NLNM_st[0]
+
+# Scale noise by 10
+NHNM_noise_x10 = NHNM_noise.copy()
+NHNM_noise_x10.data = NHNM_noise_x10.data * 10
+
+NLNM_noise_x10 = NLNM_noise.copy()
+NLNM_noise_x10.data = NLNM_noise_x10.data * 10
+
+# Scale noise by 100
+NHNM_noise_x100 = NHNM_noise.copy()
+NHNM_noise_x100.data = NHNM_noise_x100.data * 100
+
+NLNM_noise_x100 = NLNM_noise.copy()
+NLNM_noise_x100.data = NLNM_noise_x100.data * 100
+
+# Scale noise by 1000
+NHNM_noise_x1k = NHNM_noise.copy()
+NHNM_noise_x1k.data = NHNM_noise_x1k.data * 1000
+
+NLNM_noise_x1k = NLNM_noise.copy()
+NLNM_noise_x1k.data = NLNM_noise_x1k.data * 1000
+
+# Scale noise by 10K
+NHNM_noise_x10k = NHNM_noise.copy()
+NHNM_noise_x10k.data = NHNM_noise_x10k.data * 10000
+
+NLNM_noise_x10k = NLNM_noise.copy()
+NLNM_noise_x10k.data = NLNM_noise_x10k.data * 10000
+
+# Add the noise to the synthetics
+## 'signal' may be stream of traces, 'noise' should be single trace
+NHNM_st_noisy = add_modeled_noise(synths[0], NHNM_noise)
+NLNM_st_noisy = add_modeled_noise(synths[0], NLNM_noise)
+
+NHNM_st_noisy_x10 = add_modeled_noise(synths[0], NHNM_noise_x10)
+NLNM_st_noisy_x10 = add_modeled_noise(synths[0], NLNM_noise_x10)
+
+NHNM_st_noisy_x100 = add_modeled_noise(synths[0], NHNM_noise_x100)
+NLNM_st_noisy_x100 = add_modeled_noise(synths[0], NLNM_noise_x100)
+
+NHNM_st_noisy_x1k = add_modeled_noise(synths[0], NHNM_noise_x1k)
+NLNM_st_noisy_x1k = add_modeled_noise(synths[0], NLNM_noise_x1k)
+
+NHNM_st_noisy_x10k = add_modeled_noise(synths[0], NHNM_noise_x10k)
+NLNM_st_noisy_x10k = add_modeled_noise(synths[0], NLNM_noise_x10k)
+
+#%% Quick plots with ObsPy
+NHNM_noise.plot()
+NLNM_noise.plot() #This is fucked up for some reason
+
+# The above should be the same as this ...
+# NHNM_st[0].plot()
+# NLNM_st[0].plot()   #Confirmed
+
+NHNM_st_noisy_x10[0].plot()
+NLNM_st_noisy_x10[0].plot()
+
+NHNM_st_noisy_x100[0].plot()
+NLNM_st_noisy_x100[0].plot()
+
+NHNM_st_noisy_x10k[0].plot()
+NLNM_st_noisy_x10k[0].plot()
+
+
+#%% Double check NHNM and NLNM are different
+
+plt.figure()
+plt.title("Check that NHNM and NLNM are different")
+plt.plot(NHNM_noise.times(), NHNM_noise, label="NHNM Noise")
+plt.plot(NLNM_noise.times(), NLNM_noise, '--', label="NLNM Noise")
+plt.legend()
 # plt.show()
 
-dat = [t, signal]
-datdf = {'time': t, 'amplitude': signal}
-
-### Auto calculating a PSD to check (Need to be careful about windows)
-# freqs_test, psd_test = sig.welch(signal, fs = 39.07035985754947)
-# freqs_test, psd_test = sig.welch(signal, nfft=len(signal))
-# freqs_test, psd_test = sig.welch(signal, nperseg=(len(signal) / 2))
-freqs_test, psd_test = sig.welch(signal)
+# plt.savefig(san_check + "Boore Noise  - Overlay.png",dpi=600)
 
 
-plt.title("signal.welch loglog plot test")
-plt.loglog(freqs_test, psd_test)
-plt.show()
-plt.title("signal.welch semilogy plot test")
-plt.semilogy(freqs_test, psd_test)
-plt.show()
-plt.plot(freqs_test, psd_test)
-plt.show()
+fig, axs = plt.subplots(2, 1, figsize=(12, 6))
+# # fig, (ax1, ax2) = plt.subplots(1, 2, sharex=True)
+# ax1.plot(NHNM_noise.times(), NHNM_noise, label="NHNM Noise")
+# ax2.plot(NLNM_noise.times(), NLNM_noise, '--', label="NLNM Noise")
+axs[0].plot(NHNM_noise.times(), NHNM_noise, label="NHNM Noise")
+axs[1].plot(NLNM_noise.times(), NLNM_noise, label="NLNM Noise")
+axs[0].legend() ; axs[1].legend()
+# plt.show()
 
-peri_test = to_Period(freqs_test)
-plt.loglog(peri_test, psd_test)
-plt.title("Frequency to Period Conversion Test (loglog)")
-plt.show()
-
-### Manually calcuating a PSD to check (square before or after transform?!)
-# spec_r = np.abs(np.fft.rfft(signal, norm="ortho"))
-spec_r = np.abs(np.fft.rfft(signal))
-# spec_r = np.abs(np.fft.rfft(signal, n=1798, norm="ortho"))
-# spec_r = np.abs(np.fft.rfft(signal, n=899, norm="ortho"))
-spec2_r = (spec_r**2)
-spec_r_dB = 10 * np.log10(spec_r)
-spec2_r_dB = 10 * np.log10(spec2_r)
-
-### These frequency values range from
-f_r = np.fft.rfftfreq(len(signal))
-# f_r = np.fft.fftfreq(len(spec_r))
-t_r = to_Period(f_r)
+# plt.savefig(san_check + "Boore Noise  - Side by Side - Nope NLNM is Just Wrong.png",dpi=600)
 
 
-###
-plt.loglog(f_r, spec_r)
-plt.show()
+#%% Can't see differences with ObsPy plot, maybe a problem? Try manual plots
 
-plt.loglog(f_r, spec2_r)
-plt.show()
-###
+# Double check the scaling is working appropriately
 
-plt.loglog(t_r, spec2_r)
-plt.show()
+plot_log = False
+
+if not plot_log:
+    #NHNM
+    plt.figure()
+    plt.title("Noisy Synthetic Signal:"
+              "Scaling NHNM", fontsize=13, fontweight="bold")
+
+    plt.plot(NHNM_st_noisy_x10k[0].times(), NHNM_st_noisy_x10k[0], label="Noisy signal - NHNM_x10K")
+    # plt.plot(NHNM_st_noisy_x1k[0].times(), NHNM_st_noisy_x1k[0], label="Noisy signal - NHNM_x1K")
+    # plt.plot(NHNM_st_noisy_x100[0].times(), NHNM_st_noisy_x100[0], label="Noisy signal - NHNM_x100")
+    # plt.plot(NHNM_st_noisy_x10[0].times(), NHNM_st_noisy_x10[0], label="Noisy signal - NHNM_x10")
+    # plt.plot(NHNM_st[0].times(), NHNM_st[0], label="Noisy signal - No Scaling")
+    plt.plot(synths[0][0].times(), synths[0][0], label="Original")
+
+    plt.xticks(np.arange(0, max(NHNM_st[0].times()), 5))
+    plt.xlabel("Time (s)", fontweight="bold")
+    plt.ylabel("Velocity (m/s)", fontweight="bold")
+    # plt.xlim(12, 14)
+    plt.legend()
+    # plt.show()
+
+    # plt.savefig(san_check + "Synthetics  - Original and 10K Scaled NHNM Noise Added.png",dpi=600)
+    # plt.savefig(san_check + "Synthetics  - Noisy Signal, No Scaling - NHNM.png",dpi=600)
+
+    #NLNM
+    plt.figure()
+    plt.title("Noisy Synthetic Signal:"
+              "Scaling NLNM", fontsize=13, fontweight="bold")
+
+    plt.plot(NLNM_st_noisy_x10k[0].times(), NLNM_st_noisy_x10k[0], label="Noisy signal - NLNM_x10K")
+    # plt.plot(NLNM_st_noisy_x1k[0].times(), NLNM_st_noisy_x1k[0], label="Noisy signal - NLNM_x1K")
+    # plt.plot(NLNM_st_noisy_x100[0].times(), NLNM_st_noisy_x100[0], label="Noisy signal - NLNM_x100")
+    # plt.plot(NLNM_st_noisy_x10[0].times(), NLNM_st_noisy_x10[0], label="Noisy signal - NLNM_x10")
+    # plt.plot(NLNM_st[0].times(), NLNM_st[0], label="Noisy signal - No Scaling")
+    plt.plot(synths[0][0].times(), synths[0][0], label="Original")
+
+    plt.xticks(np.arange(0, max(NLNM_st[0].times()), 5))
+    plt.xlabel("Time (s)", fontweight="bold")
+    plt.ylabel("Velocity (m/s)", fontweight="bold")
+    # plt.xlim(12, 14)
+    plt.legend()
+    # plt.show()
+
+    # plt.savefig(san_check + "Synthetics  - Original and 10K Scaled NLNM Noise Added.png",dpi=600)
+    # plt.savefig(san_check + "Synthetics  - Noisy Signal, No Scaling - NLNM.png",dpi=600)
+
+else:
+    #NHNM
+    plt.figure()
+    plt.title("Noisy Synthetic Signal:"
+              "Scaling NHNM", fontsize=13, fontweight="bold")
+
+    plt.semilogy(NHNM_st_noisy_x10k[0].times(), abs(NHNM_st_noisy_x10k[0].data), label="Noisy signal - NHNM_x10K")
+    plt.semilogy(NHNM_st_noisy_x1k[0].times(), abs(NHNM_st_noisy_x1k[0].data), label="Noisy signal - NHNM_x1K")
+    plt.semilogy(NHNM_st_noisy_x100[0].times(), abs(NHNM_st_noisy_x100[0].data), label="Noisy signal - NHNM_x100")
+    plt.semilogy(NHNM_st_noisy_x10[0].times(),abs( NHNM_st_noisy_x10[0].data), label="Noisy signal - NHNM_x10")
+    plt.semilogy(NHNM_st[0].times(), abs(NHNM_st[0].data), label="Noisy signal - No Scaling")
+    plt.semilogy(synths[0][0].times(), abs(synths[0][0].data), label="Original")
+
+    plt.xticks(np.arange(0, max(NHNM_st[0].times()), 5))
+    plt.xlabel("Time (s)", fontweight="bold")
+    plt.ylabel("Velocity (m/s)", fontweight="bold")
+    # plt.xlim(12, 14)
+    plt.legend()
+    # plt.show()
+
+    # plt.savefig(san_check + "Synthetics  - Log Plotting to Check Scaling - NHNM.png",dpi=600)
+
+    #NLNM
+    plt.figure()
+    plt.title("Noisy Synthetic Signal:"
+              "Scaling NLNM", fontsize=13, fontweight="bold")
+
+    plt.semilogy(NLNM_st_noisy_x10k[0].times(), abs(NLNM_st_noisy_x10k[0].data), label="Noisy signal - NLNM_x10K")
+    plt.semilogy(NLNM_st_noisy_x1k[0].times(), abs(NLNM_st_noisy_x1k[0].data), label="Noisy signal - NLNM_x1K")
+    plt.semilogy(NLNM_st_noisy_x100[0].times(), abs(NLNM_st_noisy_x100[0].data), label="Noisy signal - NLNM_x100")
+    plt.semilogy(NLNM_st_noisy_x10[0].times(), abs(NLNM_st_noisy_x10[0].data), label="Noisy signal - NLNM_x10")
+    plt.semilogy(NLNM_st[0].times(), abs(NLNM_st[0].data), label="Noisy signal - No Scaling")
+    plt.semilogy(synths[0][0].times(), abs(synths[0][0].data), label="Original")
+
+    plt.xticks(np.arange(0, max(NLNM_st[0].times()), 5))
+    plt.xlabel("Time (s)", fontweight="bold")
+    plt.ylabel("Velocity (m/s)", fontweight="bold")
+    # plt.xlim(12, 14)
+    plt.legend()
+    # plt.show()
+
+    # plt.savefig(san_check + "Synthetics  - Log Plotting to Check Scaling - NLNM.png",dpi=600)
+
+#%% Make some plots to check things out
+
+plot_a_palooza=False
+if plot_a_palooza:
+    def plot_waveform_overlay(NHNM_st, NLNM_st, reverse_zorder=False):
+
+        print("\nPlotting Waveform Overlay ...\n")
+
+        plt.figure()
+        plt.title("Noise Series Constructed From NHNM and NLNM:"
+                  "Anomalous Amplitudes", fontsize=13, fontweight="bold")
+
+        if reverse_zorder:
+            plt.plot(NLNM_st[0].times(), NLNM_st[0], label="NLNM")
+            plt.plot(NHNM_st[0].times(), NHNM_st[0], label="NHNM")
+        else:
+            plt.plot(NHNM_st[0].times(), NHNM_st[0], label="NHNM")
+            plt.plot(NLNM_st[0].times(), NLNM_st[0], label="NLNM")
+
+        plt.xticks(np.arange(0, max(NHNM_st[0].times()), 5))
+        plt.xlabel("Time (s)", fontweight="bold")
+        plt.ylabel("Velocity (m/s)", fontweight="bold")
+        plt.legend()
+        plt.show()
 
 
-plt.semilogx(t_r, spec2_r_dB)
-plt.show()
+    plot_waveform_overlay(NHNM_st, NLNM_st, reverse_zorder=True)
 
 
-plt.plot(spec2_r_dB)
-plt.title("Just plotting Abs(Spectra)^2 in dB --> Correct Shape")
-plt.show()
+    def plot_fft_overlay(NHNM_st, NLNM_st, reverse_zorder=False):
+        print("\nPlotting Periodogram Overlay ...\n")
+        delta_h = NHNM_st[0].stats.delta
+        delta_l = NLNM_st[0].stats.delta
 
-T = np.linspace(min(T2), max(T2), len(spec_r_dB))
-plt.semilogx(T, spec2_r_dB)
-plt.title("Wrong T + Abs(Spectra)^2 in dB --> Correct Shape")
-plt.show()
+        nfft_h = len(NHNM_st[0]) * 2
+        nfft_l = len(NLNM_st[0]) * 2
 
-plt.plot(T, spec2_r_dB)
-plt.title("Correct-ish T (spacing) + Abs(Spectra)^2 in dB --> Correct Shape")
-plt.show()
+        fft_h = np.abs(np.fft.fftshift(np.fft.fft(NHNM_st[0], nfft_h) * (delta_h)))
+        freq_h = np.fft.fftfreq(nfft_h, delta_h)
+        freq_h = np.fft.fftshift(freq_h)
 
-# %%
+        fft_l = np.abs(np.fft.fftshift(np.fft.fft(NLNM_st[0], nfft_l) * (delta_l)))
+        freq_l = np.fft.fftfreq(nfft_l, delta_l)
+        freq_l = np.fft.fftshift(freq_l)
 
-### OK only dB units work for now ... ###
-N_series = 5
-model = "low"
-quantity = "vel"
-units = "dB"
+        if reverse_zorder:
+            plt.loglog(freq_l, fft_l, label="NLNM")
+            plt.loglog(freq_h, fft_h, label="NHNM")
 
-for i in range(N_series):
-    [t, signal, Z] = assemble_signal(model=model, quantity=quantity, y_units=units, delta=0.02559485)
+        else:
+            plt.loglog(freq_h, fft_h, label="NHNM")
+            plt.loglog(freq_l, fft_l, label="NLNM")
 
-    # N = 1798
-    # resamp = sig.resample(signal, N)
-    # resamp_scaled = np.zeros(len(NHNM_resamp))
-    # plt.plot(resamp)
+        plt.title("FFT of Noise Time Series Generated from NHNM/NLNM", fontsize=16, fontweight="bold")
+        plt.ylabel('Spectral Amplitude', fontweight="bold")
+        plt.xlabel('Frequency (Hz)', fontweight="bold")
+        # plt.xlim(0, 20)
+        plt.legend()
 
-    # filename = "noise-" + model + "_" + quantity + "_" + units + "_" + str(i)
-    # save_noise_csv(t, signal, filename=filename)
+        plt.savefig(san_check + "NHNM-NLNM FFTs.png")
+        # plt.show()
+
+
+    plot_fft_overlay(NHNM_st, NLNM_st, reverse_zorder=True)
+
+
+    def plot_spectrograms(NHNM_st, NLNM_st):
+        print("\nPlotting Spectrograms ...\n")
+
+        fig, axs = plt.subplots(1, 2, figsize=(12, 6))
+
+        fig.suptitle("Spectrograms for NHNM and NLNM Time Series",
+                     fontsize=16, fontweight="bold")
+
+        NHNM_st[0].spectrogram(axes=axs[0])
+        # NHNM_st[0].spectrogram(axes=axs[0], dbscale=True)
+        # NHNM_st[0].spectrogram(axes=axs[0], log=True)
+        axs[0].set_title("Time Series Constructed from NHNM", fontweight="bold")
+        axs[0].set_xlabel("Time (s)", fontweight="bold")
+        axs[0].set_ylabel("Frequency (Hz)", fontweight="bold")
+        axs[0].set_xticks(np.arange(0, max(NHNM_st[0].times()), 5))
+
+        NLNM_st[0].spectrogram(axes=axs[1])
+        # NLNM_st[0].spectrogram(axes=axs[1], dbscale=True)
+        # NLNM_st[0].spectrogram(axes=axs[1], log=True)
+        axs[1].set_title("Time Series Constructed from NLNM", fontweight="bold")
+        axs[1].set_xlabel("Time (s)", fontweight="bold")
+        axs[1].set_ylabel("Frequency (Hz)", fontweight="bold")
+        axs[1].set_xticks(np.arange(0, max(NHNM_st[0].times()), 5))
+
+        # plt.savefig(san_check + "NHNM-NLNM Spectrograms.png")
+        plt.show()
+
+
+    plot_spectrograms(NHNM_st, NLNM_st)
+
+
+    def plot_ppsd_welch(NHNM_st, NLNM_st):
+
+        plt.figure()
+        # segmt_lens = [32, 64, 128, 256, 512]
+        segmt_lens = [32, 256]
+        segmt_lens.reverse()
+
+        for nperseg in segmt_lens:
+            fs_h = NHNM_st[0].stats.sampling_rate
+            fs_l = NLNM_st[0].stats.sampling_rate
+
+            freq_wh, Pxx_wh = sig.welch(NHNM_st[0], fs_h, nperseg=nperseg)
+            freq_wl, Pxx_wl = sig.welch(NLNM_st[0], fs_l, nperseg=nperseg)
+            label_h = "NHNM, nperseg: " + str(nperseg)
+            label_l = "NLNM, nperseg: " + str(nperseg)
+            plt.semilogy(freq_wh, Pxx_wh, label=label_h)
+            plt.semilogy(freq_wl, Pxx_wl, label=label_l)
+
+        # plt.ylim([0.5e-3, 1])
+        plt.title("Estimated PSD for NHNM/NLNM Time Series with Welch's Method",
+                  fontsize=13, fontweight="bold")
+        plt.xlabel('frequency [Hz]', fontweight="bold")
+        plt.ylabel('PSD [V**2/Hz]', fontweight="bold")
+        plt.legend()
+        plt.savefig(san_check + "PSD via Welch's Method - NHNM-NLNM - 32 and 256 nperseg.png")
+
+
+    plot_ppsd_welch(NHNM_st, NLNM_st)
+
 
 
