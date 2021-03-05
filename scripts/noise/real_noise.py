@@ -18,6 +18,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import obspy
 import cartopy
+from obspy import read
 from obspy.core import UTCDateTime
 from obspy.core.stream import Stream
 from obspy.clients.fdsn import Client
@@ -37,11 +38,11 @@ plt.rcParams['font.size'] = 6
     Networks fitting those criteria are AM, CE, CI, CJ, FA, NP, and WR
 
 """
-# %% Get stations
-
-# Paths
+#%% Set paths
+data_path = "/Users/gabriel/Documents/Research/USGS_Work/gmprocess_scratchpaper/scripts/noise/data/miniseed/real/"
 fig_path = "/Users/gabriel/Documents/Research/USGS_Work/gmprocess_scratchpaper/figs/noise_generation/real_noise/"
 
+#%% Set up query parameters
 # Pick a time range
 t1 = UTCDateTime(2019, 1, 1)
 t2 = UTCDateTime(2020, 1, 1)
@@ -56,69 +57,70 @@ chan = "*N*"  # "?N?"
 # Coordinates of Interest (seismometer on USC campus)
 lat = 34.023953
 lon = -118.285117
-r = 1
+r = 0.1
 
 # Choose a client
-IRIS = Client("IRIS")
+SCEDC = Client("SCEDC")
+#IRIS = Client("IRIS")
 # USGS = Client("USGS")
 
 # Possible networks (permanent, strong motion, long operations)
 """
     These are the networks showing stations within 1° of USC campus on the IRIS
     station browser that run until 3000-01-01 and have channel *N*
+
+    Seems like most of these are from SCEDC
 """
 ntwk_query = ['AM', 'CE', 'CI', 'CJ', 'FA', 'NP', 'WR']
 
-# Retrieve an inventory via the client
-# inventory = client.get_stations(starttime=starttime, endtime=endtime, network="IU", sta="ANMO", loc="00", channel="*Z", level="response")
-# inventory = client.get_stations(starttime=starttime, endtime=endtime, minlatitude=min_lat, maxlatitude=max_lat, minlongitude=min_lon, maxlongitude=max_lon)
+#%% Retrieve stations
+# IRIS_inv = IRIS.get_stations(
+#     starttime=t1, endtime=t2, latitude=lat, longitude=lon, maxradius=r)
+# SCEDC_inv = SCEDC.get_stations(
+#     starttime=t1, endtime=t2, latitude=lat, longitude=lon, maxradius=r)
 
-# Retrieve stations
-IRIS_inv = IRIS.get_stations(
-    starttime=t1, endtime=t2, latitude=lat, longitude=lon, maxradius=r)
+# # Print preview
+# print(SCEDC_inv)
 
-# Print preview
-print(IRIS_inv)
+# # Quick and dirty network plot facilitated by ObsPy
+# SCEDC_inv.plot(projection="local", resolution="f")
 
-# Quick and dirty network plot facilitated by ObsPy
-IRIS_inv.plot(projection="local", resolution="f")
+#%% Use the bulk waveform downloader for smaller datasets
+# ntwks = []
+# stns = []
+# stns_coord = []
 
-#%% Use the bulk waveform downloader
-ntwks = []
-stns = []
-stns_coord = []
+# station_meta = []
+# bulk = []
+# US = []
 
-station_meta = []
-bulk = []
-US = []
+# # Get station information from inventory for waveform download
+# networks = SCEDC_inv.networks
 
-# Get station information from inventory for waveform download
-networks = IRIS_inv.networks
+# for ntwk in networks:
+#     stations = []
+#     ntwk_code = ''
+#     station_code = ''
 
-for ntwk in networks:
-    stations = []
-    ntwk_code = ''
-    station_code = ''
+#     if not (ntwk.code in ntwks):
+#         ntwk_code = ntwk.code
+#         ntwks.append(ntwk.code)
 
-    if not (ntwk.code in ntwks):
-        ntwk_code = ntwk.code
-        ntwks.append(ntwk.code)
+#     for stn in ntwk:
+#         stn_code = stn.code
+#         stn_coord = [stn.longitude, stn.latitude]
 
-    for stn in ntwk:
-        stn_code = stn.code
-        stn_coord = [stn.longitude, stn.latitude]
+#         if not (stn.code in stns):
+#             stns.append(stn_code)
+#             stations.append(stn_code)
+#             stns_coord.append([stn.longitude, stn.latitude])
 
-        if not (stn.code in stns):
-            stns.append(stn_code)
-            stations.append(stn_code)
-            stns_coord.append([stn.longitude, stn.latitude])
+#         bulk.append((ntwk_code, stn_code, "*", chan, t1, t2))
 
-        bulk.append((ntwk_code, stn_code, "*", chan, t1, t2))
+#         if ntwk_code == "US":
+#             US.append((ntwk_code, stn_code, "*", chan, t1, t2))
 
-        if ntwk_code == "US":
-            US.append((ntwk_code, stn_code, "*", chan, t1, t2))
-
-    station_meta.append((ntwk_code, stations))
+#     station_meta.append((ntwk_code, stations))
 
 
 # st_full = Stream()
@@ -126,7 +128,7 @@ for ntwk in networks:
 # st_full = IRIS.get_waveforms_bulk(bulk)
 # st_US = IRIS.get_waveforms_bulk(US)
 
-#%% Use MassDownloader
+#%% Use MassDownloader for continuous datasets
 """
     For continuous requests, using the MassDownloader may be required. This
     approach is more flexible and is useful for continuous data. The docs for
@@ -135,6 +137,10 @@ for ntwk in networks:
 """
 domain = CircularDomain(latitude=lat, longitude=lon,
                         minradius=0.0, maxradius=r)
+
+t1 = UTCDateTime(2021, 3, 2)
+t2 = UTCDateTime(2021, 3, 3)
+
 restrictions = Restrictions(
     # Get data for a whole year.
     starttime=t1,
@@ -145,21 +151,26 @@ restrictions = Restrictions(
 
     # If the location code is specified, the location priority list is not
     # used; the same is true for the channel argument and priority list.
-    network="BW", station="A*", location="", channel="EH*",
+    network=ntwk_query[2], station="USC", location="", channel="?N?",
     # The typical use case for such a data set are noise correlations where
     # gaps are dealt with at a later stage.
     reject_channels_with_gaps=False,
     # Same is true with the minimum length. All data might be useful.
     minimum_length=0.0,
     # Guard against the same station having different names.
-    minimum_interstation_distance_in_m=100.0)
+    #minimum_interstation_distance_in_m=100.0
+)
 
-mdl = MassDownloader(providers=["LMU", "GFZ"])
+mdl = MassDownloader(providers=["SCEDC"])
 mdl.download(domain, restrictions, mseed_storage="waveforms",
              stationxml_storage="stations")
 
-#%% Plot it up!
+#%% Read in a couple test waveforms
+# test_st = Stream()
+test_st = read("/Users/gabriel/Documents/Research/USGS_Work/gmprocess_scratchpaper/scripts/noise/waveforms/CI.USC..HNZ__20210302T000000Z__20210303T000000Z.mseed")
+test_st.plot()
 
+#%% Try different plot types
 # st_full.plot(type="section")
 
 # plt_nm = "rel_plot-full_stream.png"
@@ -169,9 +180,7 @@ mdl.download(domain, restrictions, mseed_storage="waveforms",
 
 # st_full.filter("bandpass", freqmin=0.1, freqmax=12)
 
-
-#%% Template stuff from earlier use below, adpat later
-#%% FULL
+#%% Plot traces in a stream iteratively
 # for tr in st_full:
 #     tr.stats.ev_coords = [lon, lat]
 #     i = stns.index(tr.stats.station)
@@ -191,12 +200,3 @@ mdl.download(domain, restrictions, mseed_storage="waveforms",
 
 # st_full.plot(type="section", time_down=False, fillcolors=('black', 'None'),
 #              linewidth=.25, grid_linewidth=.25, dist_degree=True, ev_coord=[lon, lat])
-
-#%% US
-# for tr in st_US:
-#     stats = tr.stats
-#     plt_nm = str(stats.network) + "_" + str(stats.station) + "_" + str(stats.channel) + "filtered.png"
-
-#     tr.detrend()
-#     tr.filter("bandpass", freqmin=6, freqmax=9)
-#     tr.plot(starttime=starttime, endtime=endtime, outfile=fig_path+"/traces/"+plt_nm)
