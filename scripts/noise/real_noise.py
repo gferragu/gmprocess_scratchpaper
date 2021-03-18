@@ -40,7 +40,7 @@ plt.rcParams['font.size'] = 6
 """
 #%% Set paths
 data_path = "/Users/gabriel/Documents/Research/USGS_Work/gmprocess_scratchpaper/scripts/noise/data/miniseed/real/"
-fig_path = "/Users/gabriel/Documents/Research/USGS_Work/gmprocess_scratchpaper/figs/noise_generation/real_noise/"
+fig_path = "/Users/gabriel/Documents/Research/USGS_Work/gmprocess_scratchpaper/figs/real_noise/"
 
 #%% Set up query parameters
 # Pick a time range
@@ -161,27 +161,41 @@ restrictions = Restrictions(
     #minimum_interstation_distance_in_m=100.0
 )
 
-mdl = MassDownloader(providers=["SCEDC"])
-mdl.download(domain, restrictions, mseed_storage="waveforms",
-             stationxml_storage="stations")
+mdl = "tmp"
+download = True
+
+if download:
+    mdl = MassDownloader(providers=["SCEDC"])
+    mdl.download(domain, restrictions, mseed_storage=data_path + "waveforms/USC/",
+                 stationxml_storage=data_path + "stations/")
 
 #%% Read in a couple test waveforms
 # test_st = Stream()
-test_st = read("/Users/gabriel/Documents/Research/USGS_Work/gmprocess_scratchpaper/scripts/noise/waveforms/CI.USC..HNZ__20210302T000000Z__20210303T000000Z.mseed")
-test_st.plot()
+plots = True
+
+if plots:
+    # High Broad Band (H??)
+    HNx_st = read(data_path + "waveforms/USC/*HN*.mseed")
+    # Long Period (L??)
+    LNx_st = read(data_path + "waveforms/USC/*LN*.mseed")
+
+    HNx_st.plot()
+    LNx_st.plot()
 
 #%% Try different plot types
-# st_full.plot(type="section")
+
+# st.plot(type="section")
 
 # plt_nm = "rel_plot-full_stream.png"
-# st_full.plot(type="relative", outfile=fig_path+plt_nm)
+# st.plot(type="relative", outfile=fig_path+plt_nm)
 
-# st_full.plot(type="dayplot")
+# st.plot(type="dayplot")
 
-# st_full.filter("bandpass", freqmin=0.1, freqmax=12)
+# st.filter("bandpass", freqmin=0.1, freqmax=12)
 
 #%% Plot traces in a stream iteratively
-# for tr in st_full:
+
+# for tr in st:
 #     tr.stats.ev_coords = [lon, lat]
 #     i = stns.index(tr.stats.station)
 #     # tr.stats.longitude = stns_coord[i][0]
@@ -198,5 +212,6 @@ test_st.plot()
 #     tr.filter("bandpass", freqmin=2, freqmax=10)
 #     tr.plot(outfile=fig_path + "traces/" + plt_nm)
 
-# st_full.plot(type="section", time_down=False, fillcolors=('black', 'None'),
+# st.plot(type="section", time_down=False, fillcolors=('black', 'None'),
+#              linewidth=.25, grid_linewidth=.25, dist_degree=True, ev_coord=[lon, lat])
 #              linewidth=.25, grid_linewidth=.25, dist_degree=True, ev_coord=[lon, lat])
