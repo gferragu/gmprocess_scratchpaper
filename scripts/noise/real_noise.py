@@ -18,9 +18,12 @@ import numpy as np
 import matplotlib.pyplot as plt
 import obspy
 import cartopy
+import scipy.constants as sp
+from scipy import integrate
 from obspy import read
 from obspy.core import UTCDateTime
 from obspy.core.stream import Stream
+from obspy.core.stream import Trace
 from obspy.clients.fdsn import Client
 from obspy.clients.fdsn.mass_downloader import Restrictions, MassDownloader
 from obspy.clients.fdsn.mass_downloader import CircularDomain
@@ -42,8 +45,82 @@ plt.rcParams['font.size'] = 6
 data_path = "/Users/gabriel/Documents/Research/USGS_Work/gmprocess_scratchpaper/scripts/noise/data/miniseed/real/"
 fig_path = "/Users/gabriel/Documents/Research/USGS_Work/gmprocess_scratchpaper/figs/real_noise/"
 
-#%% Set up query parameters
-# Pick a time range
+
+#%% Start building functions to make this reproducable and easy
+
+def resample_for_synth(st, npts, dt):
+    """
+
+
+    Parameters
+    ----------
+    st : TYPE
+        DESCRIPTION.
+    npts : TYPE
+        DESCRIPTION.
+    dt : TYPE
+        DESCRIPTION.
+
+    Returns
+    -------
+    None.
+
+    """
+    st_npts = st.stats.npts
+    st_dt = st.stats.delta
+    st_t_range = st_npts * st_dt
+
+    # Unfinished
+
+    return None
+
+
+def get_arias(st, units='m/s/s'):
+    """
+    Basically stealing the code from gmprocess for this:
+    "Performs calculation of arias intensity"
+
+    Returns
+    -------
+            arias_intensities: Dictionary of arias intensity for each channel.
+    """
+
+    acc = []
+    gal_2_pctg = (1 / (2 * sp.g))
+
+    arias_st = Stream()
+
+    for trace in st:
+        dt = trace.stats.delta
+
+        # Do I need to convert from cm/s to m/s?
+        if units == 'm/s/s':
+            acc = trace.data
+        elif units == 'cm/s/s':
+            acc = trace.data * 0.01
+
+        intgrd_sq_acc = integrate.cumtrapz(acc * acc, dx=dt)
+        arias_intens = intgrd_sq_acc * np.pi * gal_2_pctg
+
+        stats = trace.stats.copy()
+        # chan = stats.channel
+        # stats.standard.units = 'vel'
+        stats.npts = len(arias_intens)
+        arias_tr = Trace(arias_intens)
+        arias_tr.stats = stats
+        arias_st += arias_tr
+
+    return arias_st
+
+
+def cut_earthquake():
+
+    # Unfinished
+
+    return None
+
+    #%% Set up query parameters
+    # Pick a time range
 t1 = UTCDateTime(2019, 1, 1)
 t2 = UTCDateTime(2020, 1, 1)
 end = UTCDateTime(3000, 1, 1)          # Appears to be last possible date
@@ -173,15 +250,51 @@ if download:
 # test_st = Stream()
 plots = True
 
+HNx_st = Stream()
+LNx_st = Stream()
+
 if plots:
     # High Broad Band (H??)
-    HNx_st = read(data_path + "waveforms/USC/*HN*.mseed")
+    HNx_st += read(data_path + "waveforms/USC/*HN*.mseed")
     # Long Period (L??)
-    LNx_st = read(data_path + "waveforms/USC/*LN*.mseed")
+    LNx_st += read(data_path + "waveforms/USC/*LN*.mseed")
 
     HNx_st.plot()
     LNx_st.plot()
 
+
+#%% Try to get Arias intensity ...
+HNx_st = HNx_st.detrend()
+LNx_st = LNx_st.detrend()
+
+HNx_arias = get_arias(HNx_st)
+LNx_arias = get_arias(LNx_st)
+
+#%% Plot Arias
+HNx_arias.plot()
+LNx_arias.plot()
+
+# ... Not what I expected ...
+# Derp, needed to detrend at the very least
+
+#%% Get a window around an earthquake to look at Arias inensity
+
+# There is definitely an even late in the evening March 4th
+t1 = UTCDateTime("2021-03-04T19:15:00")
+# Using 24:00:00 throws error
+t2 = UTCDateTime("2021-03-04T21:30:00")
+
+HNx_st_eq = HNx_st.slice(starttime=t1, endtime=t2)
+LNx_st_eq = LNx_st.slice(starttime=t1, endtime=t2)
+
+HNx_arias_eq = HNx_arias.slice(starttime=t1, endtime=t2)
+LNx_arias_eq = LNx_arias.slice(starttime=t1, endtime=t2)
+
+HNx_st_eq = HNx_st_eq.plot()
+LNx_st_eq = LNx_st_eq.plot()
+
+HNx_arias_eq.plot()
+LNx_arias_eq.plot()
 #%% Try different plot types
 
 # st.plot(type="section")
