@@ -24,11 +24,17 @@ from obspy import read
 from obspy.core import UTCDateTime
 from obspy.core.stream import Stream
 from obspy.core.stream import Trace
+# from obspy.signal.interpolation import interpolate
+from obspy.signal.interpolation import plot_lanczos_windows
 from obspy.clients.fdsn import Client
 from obspy.clients.fdsn.mass_downloader import Restrictions, MassDownloader
 from obspy.clients.fdsn.mass_downloader import CircularDomain
 from obspy.clients.fdsn.mass_downloader import RectangularDomain
+
 plt.rcParams['font.size'] = 6
+# plt.style.use('ggplot')
+plt.style.use('seaborn')
+
 
 """
     Attempting to identify any continuous strong motion accelerometers
@@ -118,6 +124,72 @@ def cut_earthquake():
     # Unfinished
 
     return None
+
+
+def download_noise_windows(yr=2021, mnth=3, day=4, tod='morning'):
+
+    morning = [UTCDateTime(yr, mnth, day, 6), UTCDateTime(yr, mnth, day, 9)]
+
+    afternoon = [UTCDateTime(yr, mnth, day, 12), UTCDateTime(yr, mnth, day, 15)]
+
+    evening = [UTCDateTime(yr, mnth, day, 18), UTCDateTime(yr, mnth, day, 21)]
+
+    night = [UTCDateTime(yr, mnth, day, 22, 30),
+             UTCDateTime(yr, mnth, day + 1, 1, 30)]
+
+    restrictions = Restrictions(
+        starttime=morning[0],
+        endtime=morning[1],
+        chunklength_in_sec=46,
+        network=ntwk_query[2], station="USC", location="", channel="?N?",
+        reject_channels_with_gaps=False,
+        minimum_length=0.0,
+    )
+
+def check_stream_sampling_rate(st):
+    N_traces = len(st)
+    fs = np.zeros(N_traces)
+    for i in range(N_traces):
+        fs_tmp = (1 / st[i].stats.delta)
+        fs[i] = fs_tmp
+
+    # Check for fs that remain unset
+    if any in fs == 0:
+        print("\nWarning: Some sampling rates are 0\n")
+    # Check if all fs are equal
+    elif all(x == fs[0] for x in fs):
+        print("\nNote: All sampling rates are equal: " + str(fs[0]) + " Hz\n")
+        return fs[0]
+    else:
+        print("\nNote: Variable sampling rates, returning array of them \n")
+        return fs
+
+
+def check_stream_npts(st):
+    N_traces = len(st)
+    npts = np.zeros(N_traces)
+    for i in range(N_traces):
+        npts_tmp = st[i].stats.npts
+        npts[i] = npts_tmp
+
+    # Check for fs that remain unset
+    if any in npts == 0:
+        print("\nWarning: Some NPTS are 0\n")
+    # Check if all fs are equal
+    elif all(x == npts[0] for x in npts):
+        print("\nNote: All NPTS are equal: " + str(npts[0]) + "\n")
+        return npts[0]
+    else:
+        print("\nNote: Variable NPTS, returning array of them \n")
+        bins = 24
+        plt.figure()
+        plt.hist(npts, bins=bins, label="# of Bins:"+str(bins))
+        plt.title("Histogram of NPTS for Trace() objects in Stream()")
+        plt.xlabel("NPTS in Trace")
+        plt.ylabel("Count")
+        plt.legend()
+        plt.show()
+        return npts
 
     #%% Set up query parameters
     # Pick a time range
@@ -239,7 +311,7 @@ restrictions = Restrictions(
 )
 
 mdl = "tmp"
-download = True
+download = False
 
 if download:
     mdl = MassDownloader(providers=["SCEDC"])
@@ -247,7 +319,6 @@ if download:
                  stationxml_storage=data_path + "stations/")
 
 #%% Read in a couple test waveforms
-# test_st = Stream()
 plots = True
 
 HNx_st = Stream()
@@ -295,36 +366,103 @@ LNx_st_eq = LNx_st_eq.plot()
 
 HNx_arias_eq.plot()
 LNx_arias_eq.plot()
-#%% Try different plot types
 
-# st.plot(type="section")
+#%% Try 46 second chunk times, discard if arias intensity rises?
+yr = 2021
+mnth = 3
+day = 4
 
-# plt_nm = "rel_plot-full_stream.png"
-# st.plot(type="relative", outfile=fig_path+plt_nm)
+morning = [UTCDateTime(yr, mnth, day, 6), UTCDateTime(yr, mnth, day, 9)]
 
-# st.plot(type="dayplot")
+afternoon = [UTCDateTime(yr, mnth, day, 12), UTCDateTime(yr, mnth, day, 15)]
 
-# st.filter("bandpass", freqmin=0.1, freqmax=12)
+evening = [UTCDateTime(yr, mnth, day, 18), UTCDateTime(yr, mnth, day, 21)]
 
-#%% Plot traces in a stream iteratively
+night = [UTCDateTime(yr, mnth, day, 22, 30),
+         UTCDateTime(yr, mnth, day + 1, 1, 30)]
 
-# for tr in st:
-#     tr.stats.ev_coords = [lon, lat]
-#     i = stns.index(tr.stats.station)
-#     # tr.stats.longitude = stns_coord[i][0]
-#     # tr.stats.latitude = stns_coord[i][1]
-#     tr.stats.coordinates.longitude = stns_coord[i][0]
-#     tr.stats.coordinates.latitude = stns_coord[i][1]
+tod = night
 
-#     stats = tr.stats
-#     # plt_nm = str(stats.network) + "_" + str(stats.station) + "-15min_pre_post-" + str(stats.channel) + ".png"
-#     plt_nm = str(stats.network) + "_" + str(stats.station) + \
-#         "_" + str(stats.channel) + ".png"
+restrictions = Restrictions(
+    starttime=tod[0],
+    endtime=tod[1],
+    chunklength_in_sec=46,
+    network=ntwk_query[2], station="USC", location="", channel="?N?",
+    reject_channels_with_gaps=False,
+    minimum_length=0.0,
+)
 
-#     tr.detrend()
-#     tr.filter("bandpass", freqmin=2, freqmax=10)
-#     tr.plot(outfile=fig_path + "traces/" + plt_nm)
+mdl = "tmp"
+download = False
+tod = "night"
 
-# st.plot(type="section", time_down=False, fillcolors=('black', 'None'),
-#              linewidth=.25, grid_linewidth=.25, dist_degree=True, ev_coord=[lon, lat])
-#              linewidth=.25, grid_linewidth=.25, dist_degree=True, ev_coord=[lon, lat])
+if download:
+    mdl = MassDownloader(providers=["SCEDC"])
+    mdl.download(domain, restrictions, mseed_storage=data_path + "waveforms/USC_" + tod + "/",
+                 stationxml_storage=data_path + "stations/")
+
+
+#%% Plot
+tod = "afternoon"
+
+plots = True
+arias = True
+
+HNx_st = Stream()
+LNx_st = Stream()
+
+# High Broad Band (H??)
+HNx_st += read(data_path + "waveforms/USC_" + tod + "/*HN*.mseed")
+# Long Period (L??)
+LNx_st += read(data_path + "waveforms/USC_" + tod + "/*LN*.mseed")
+
+if plots:
+    HNx_st.plot()
+    LNx_st.plot()
+
+    for tr in HNx_st:
+        tr.plot()
+
+    # Check Arias Intensity
+    if arias:
+        HNx_st = HNx_st.detrend()
+        HNx_st_arias = get_arias(HNx_st)
+
+
+#%% Try the Lanczos interpolation to resample to 30 seconds
+
+"""
+If used for downsampling, ***make sure to apply an appropriate anti-aliasing lowpass filter first***
+
+***Values of a >= 20 show good results even for data that has energy close to the Nyquist frequency. If your data is extremely oversampled you can get away with much smaller a‘s***
+
+Also be aware of any boundary effects. All values outside the data range are assumed to be zero which matters when calculating interpolated values at the boundaries. At each side the area with potential boundary effects is a * old_dt. If you want to avoid any boundary effects you will have to remove these values.
+
+Syntax:
+Trace/Stream.interpolate(sampling_rate, method='weighted_average_slopes', starttime=None, npts=None, time_shift=0.0, *args, **kwargs)
+
+lanczos_interpolation(data, old_start, old_dt, new_start, new_dt, new_npts, a, window='lanczos', *args, **kwargs)
+"""
+
+# Choose parameters
+a = 1
+# fs_dat = 100.0
+fs_synth = 39.07035985754947
+windows = ["blackman", "hanning", "lancsoz"]
+
+# Data features
+fs_dat = check_stream_sampling_rate(HNx_st)
+npts_dat = check_stream_npts(HNx_st)
+
+# Check out the different tapers that can be used
+# for Lanczos interpolation for a particular value of 'a'
+plot_lanczos_windows(a=a)
+# plot_lanczos_windows(a=a, filename=fig_path+"lanczos_windows_a="+str(a)+".png")
+
+
+# Is this easier to do in a loop (check values for each trace?)
+HNx_resamp = HNx_st.copy()
+HNx_resamp = HNx_resamp.interpolate(fs_dat, "lanczos", a=a, window=windows[0])
+
+HNx_resamp.plot()
+

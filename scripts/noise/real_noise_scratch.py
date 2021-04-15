@@ -162,7 +162,7 @@ restrictions = Restrictions(
 )
 
 mdl = "tmp"
-download = True
+download = False
 
 if download:
     mdl = MassDownloader(providers=["SCEDC"])
