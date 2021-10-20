@@ -16,21 +16,25 @@
 import os
 import logging
 
-# local imports
-from gmprocess.denoise import dwt
-from gmprocess import filtering
-from gmprocess.streamcollection import StreamCollection
-from gmprocess.io.read import read_data
-from gmprocess.processing import process_streams
-from gmprocess.logging import setup_logger
-from gmprocess.io.test_utils import read_data_dir
+# local imports - gmprocess version
+# from gmprocess.denoise import dwt
+# from gmprocess import filtering
+# from gmprocess.streamcollection import StreamCollection
+# from gmprocess.io.read import read_data
+# from gmprocess.processing import process_streams
+# from gmprocess.logging import setup_logger
+# from gmprocess.io.test_utils import read_data_dir
+# setup_logger()
+
+# local imports - gmprocess scratchwork
+from . import dwt
+
 
 # third party imports
 import pywt
 import numpy as np
 import matplotlib as plt
 
-setup_logger()
 # %% Plotting and method checks
 
 
@@ -87,24 +91,26 @@ def add_bandpassed_random_noise(st, sigma=0.1,
     return noisy_signal
 
 
-def wavelet_bandpass_comparison(st, residual=True, overlay=True):
-    """
-    Performs denoising on traces in stream with two methods using their
-    default values and compares results graphically
-    """
+# Commented out for the moment because gmprocess isn' working in the scratchpaper repo
 
-    wavelet_denoised = dwt.denoise(st)
+# def wavelet_bandpass_comparison(st, residual=True, overlay=True):
+#     """
+#     Performs denoising on traces in stream with two methods using their
+#     default values and compares results graphically
+#     """
 
-    highpass_denoised = filtering.highpass_filter(st)
-    bandpass_denoised = filtering.lowpass_filter(highpass_denoised)
+#     wavelet_denoised = dwt.denoise(st)
 
-    fig1 = plt.figure()
-    plt.plot(wavelet_denoised)
+#     highpass_denoised = filtering.highpass_filter(st)
+#     bandpass_denoised = filtering.lowpass_filter(highpass_denoised)
 
-    fig2 = plt.figure()
-    plt.plot(bandpass_denoised)
+#     fig1 = plt.figure()
+#     plt.plot(wavelet_denoised)
 
-    return fig1, fig2
+#     fig2 = plt.figure()
+#     plt.plot(bandpass_denoised)
+
+#     return fig1, fig2
 
 # def wavelet_bandpass_comparison_trace(tr, residual=True, overlay=True):
 #     """

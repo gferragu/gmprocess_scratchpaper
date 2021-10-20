@@ -8,17 +8,19 @@
 #
 #               Modified for gmprocess by Gabriel Ferragut
 #              U.S. Geological Survey/ University of Oregon
-#                       
+#
 # ======================================================================
 #
+import sys
+import os
 
 import numpy as np
 import logging
-import utils
+from . import utils
 
-def denoise(st, wavelet="coif4", MODE="zero", remove_bg=True, 
-                threshold='soft', zero_coarse_levels=1, zero_fine_levels=1, 
-                preevent_window=10.0, preevent_threshold_reduction=2.0, 
+def denoise(st, wavelet="coif4", MODE="zero", remove_bg=True,
+                threshold='soft', zero_coarse_levels=1, zero_fine_levels=1,
+                preevent_window=10.0, preevent_threshold_reduction=2.0,
                 store_orig=False, store_noise=False):
     """Remove noise from waveforms using wavelets in a two-step
     process. In the first step, noise is identified via a Kurtosis
@@ -101,7 +103,7 @@ def denoise(st, wavelet="coif4", MODE="zero", remove_bg=True,
             trNoise = tr.copy()
             trNoise.data = pywt.waverec(coefsNoise, wavelet, mode=MODE)
             tracesNoise.append(trNoise)
-                
+
         #Signal to noise ratio
         if threshold == 'soft':
             tr = utils.soft_threshold(tr, channelLabel, coefs, coefsNoise, logger)
@@ -116,7 +118,7 @@ def denoise(st, wavelet="coif4", MODE="zero", remove_bg=True,
     if store_noise:
         import obspy.core
         dataOut["noise"] = obspy.core.Stream(traces=tracesNoise)
-        
+
     return dataOut
 
 
@@ -186,7 +188,7 @@ def denoise_trace(tr, wavelet="coif4", MODE="zero", remove_bg=True,
         coefsNoise = utils.kurtosis(channelLabel, coefs, logger)
 
     # Identify pre-event noise at all wavelet levels and remove
-    coefs, coefsNoise = utils.remove_pre_event_noise(tr, coefs, preevent_window, preevent_threshold_reduction)
+    coefs, coefsNoise = utils.remove_pre_event_noise(tr, coefs, coefsNoise, preevent_window, preevent_threshold_reduction)
     for ilevel in range(1+zero_coarse_levels):
         coefsNoise[ilevel] += coefs[ilevel].copy()
         coefs[ilevel] *= 0.0
@@ -206,9 +208,9 @@ def denoise_trace(tr, wavelet="coif4", MODE="zero", remove_bg=True,
 
     # Signal to noise ratio
     if threshold == 'soft':
-        tr = utils.soft_threshold(tr, channelLabel, coefs, coefsNoise, logger)
+        tr = utils.soft_threshold(tr, coefs, coefsNoise, logger)
     elif threshold == 'hard':
-        tr = utils.hard_threshold(tr, channelLabel, coefs, coefsNoise, logger)
+        tr = utils.hard_threshold(tr, coefs, coefsNoise, logger)
     elif threshold == 'block':
         logger.info("Block thresholding currenlty under development")
     else:

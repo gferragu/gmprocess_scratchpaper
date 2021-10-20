@@ -18,7 +18,8 @@ from obspy import Trace
 from obspy.core.stream import Stream
 
 # from synthetics.synthetics import read_synthetic_streams
-from synthetics import read_synthetic_streams
+# from synthetics import read_synthetic_streams                 # Used to work?
+import synthetics as synth
 
 # %% Functions
 
@@ -136,8 +137,6 @@ def read_noise(quantity="vel", y_units="dB", filename="", path ="/Users/gabriel/
             elif "low" in obj:
                 NLNM += tr
 
-
-
     return [NHNM, NLNM]
 
 def write_noise(stream, filename, path = "/Users/gabriel/Documents/Research/USGS_Work/gmprocess/scripts/noise/data/"):
@@ -150,6 +149,9 @@ def plot_stream(stream):
 
 def add_modeled_noise(signal, noise):
     noisy_signal = Stream()
+
+    # Add in a check for sampling rate and resampling routine?
+    # Oh wait I did that already, but need to do it for Lancsoz
 
     if type(signal) == obspy.core.stream.Stream:
         noisy_signal = signal.copy()
@@ -184,7 +186,7 @@ def add_modeled_noise(signal, noise):
 
 
 def build_modeled_noise_dataset(model="", filename="", path = "/Users/gabriel/Documents/Research/USGS_Work/gmprocess/scripts/synthetics/data/miniseed/noisy/new_noise_models/"):
-    synths = read_synthetic_streams()
+    synths = synth.read_synthetic_streams()
     wasatch_1 = synths[0]
     wasatch_2 = synths[1]
 
@@ -506,7 +508,7 @@ save_noisy = "/Users/gabriel/Documents/Research/USGS_Work//gmprocess/scripts/syn
 
 # model = ""
 
-# synths = read_synthetic_streams()
+# synths = synth.read_synthetic_streams()
 
 # wasatch_1 = synths[0]
 # wasatch_2 = synths[1]
@@ -539,26 +541,26 @@ save_noisy = "/Users/gabriel/Documents/Research/USGS_Work//gmprocess/scripts/syn
 
 #### Just turn into another function ####
 
-save_noise = "/Users/gabriel/Documents/Research/USGS_Work/gmprocess_scratchpaper/scripts/noise/data/miniseed/stochastic/"
-save_fig = "/Users/gabriel/Documents/Research/USGS_Work/gmprocess_scratchpaper/figs/noise_generation/stochastic/"
+# save_noise = "/Users/gabriel/Documents/Research/USGS_Work/gmprocess_scratchpaper/scripts/noise/data/miniseed/stochastic/"
+# save_fig = "/Users/gabriel/Documents/Research/USGS_Work/gmprocess_scratchpaper/figs/noise_generation/stochastic/"
 
-N_series = 50
-nsamp = 1798
-samp_interv = 0.02559485
+# N_series = 50
+# nsamp = 1798
+# samp_interv = 0.02559485
 
-noise = Stream()
+# noise = Stream()
 
-for i in range(N_series):
-    noise_amp = gen_band_limited_noise(0.01, 40, nsamp, sampling_rate)
+# for i in range(N_series):
+#     noise_amp = gen_band_limited_noise(0.01, 40, nsamp, sampling_rate)
 
-    tr = Trace(noise_amp)
+#     tr = Trace(noise_amp)
 
-    tr.stats.npts = nsamp
-    tr.stats.delta = samp_interv
+#     tr.stats.npts = nsamp
+#     tr.stats.delta = samp_interv
 
-    noise += tr
+#     noise += tr
 
-    filename = "stochastic_noise-" + str(i)
+#     filename = "stochastic_noise-" + str(i)
 
-    tr.plot(outfile=save_fig + filename + ".png")
-    # tr.write(save_noise + filename + ".ms", format="MSEED")
+#     tr.plot(outfile=save_fig + filename + ".png")
+#     # tr.write(save_noise + filename + ".ms", format="MSEED")
