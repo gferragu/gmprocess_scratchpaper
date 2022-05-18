@@ -3,3 +3,6 @@
 /to_do/*
 /old_stuff/*
 /wavelet_denoising/*
+/figs/*
+**DS_Store
+
